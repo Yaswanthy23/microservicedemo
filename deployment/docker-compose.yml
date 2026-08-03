@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  discovery-server:
+    build: ../discovery-server
+    container_name: crm-discovery-server
+    ports:
+      - "8761:8761"
+    networks:
+      - crm-network
+
+  config-server:
+    build: ../config-server
+    container_name: crm-config-server
+    ports:
+      - "8888:8888"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  gateway-service:
+    build: ../gateway-service
+    container_name: crm-gateway-service
+    ports:
+      - "8080:8080"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  auth-service:
+    build: ../auth-service
+    container_name: crm-auth-service
+    ports:
+      - "8081:8081"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  admin-service:
+    build: ../admin-service
+    container_name: crm-admin-service
+    ports:
+      - "8082:8082"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  employee-service:
+    build: ../employee-service
+    container_name: crm-employee-service
+    ports:
+      - "8083:8083"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  manager-service:
+    build: ../manager-service
+    container_name: crm-manager-service
+    ports:
+      - "8084:8084"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  hr-service:
+    build: ../hr-service
+    container_name: crm-hr-service
+    ports:
+      - "8085:8085"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  holiday-service:
+    build: ../holiday-service
+    container_name: crm-holiday-service
+    ports:
+      - "8086:8086"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  notification-service:
+    build: ../notification-service
+    container_name: crm-notification-service
+    ports:
+      - "8087:8087"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  dashboard-service:
+    build: ../dashboard-service
+    container_name: crm-dashboard-service
+    ports:
+      - "8088:8088"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+  audit-service:
+    build: ../audit-service
+    container_name: crm-audit-service
+    ports:
+      - "8089:8089"
+    depends_on:
+      - discovery-server
+    networks:
+      - crm-network
+
+networks:
+  crm-network:
+    driver: bridge

@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Manager — Dashboard</title>
+	<link rel="stylesheet" th:href="@{/manager.css}">
+	<link rel="stylesheet" th:href="@{/notifications.css}">
+	<link rel="stylesheet" th:href="@{/dashboard-analytics.css}">
+	<script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
+</head>
+
+<body>
+	<div class="mobile-topbar"><button class="hamburger"
+			id="hamburgerBtn"><span></span><span></span><span></span></button><span class="mobile-title">Manager</span><div class="mobile-topbar-right" id="mobileTopbarRight"></div></div>
+	<div class="sidebar-overlay" id="sidebarOverlay"></div>
+	<div class="sidebar" id="sidebar">
+		<a th:href="@{/manager/dashboard}" style="text-decoration: none; color: inherit; display: block;">
+			<div class="sidebar-logo">
+				<div class="logo-icon"><i data-lucide="briefcase"></i></div>
+				<h2>Manager</h2>
+			</div>
+		</a>
+		<div class="profile-box">
+			<div class="profile-avatar" th:text="${#strings.substring(managerName ?: 'M', 0, 1).toUpperCase()}">M</div>
+			<h3 th:text="${managerName} ?: 'Manager'">Manager</h3>
+			<p>Manager</p>
+		</div>
+		<ul class="sidebar-menu">
+			<li class="active"><a th:href="@{/manager/dashboard}"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+			<li><a th:href="@{/manager/team}"><i data-lucide="users"></i> My Team</a></li>
+			<li><a th:href="@{/manager/tasks}"><i data-lucide="check-square"></i> Tasks</a></li>
+			<li><a th:href="@{/manager/attendance}"><i data-lucide="calendar-check"></i> Attendance</a></li>
+			<li><a th:href="@{/manager/leave}"><i data-lucide="file-text"></i> Leave Request</a></li>
+			<li><a th:href="@{/manager/meetings}"><i data-lucide="calendar-clock"></i> Meetings</a></li>
+			<li><a th:href="@{/manager/calendar}"><i data-lucide="calendar"></i> Calendar</a></li>
+			<li><a th:href="@{/manager/performance}"><i data-lucide="bar-chart-2"></i> Performance</a></li>
+			<li><a th:href="@{/manager/reports}"><i data-lucide="file-bar-chart"></i> Reports</a></li>
+			<li><a th:href="@{/manager/payroll}"><i data-lucide="banknote"></i> Payslip</a></li>
+			<li><a th:href="@{/manager/profile}"><i data-lucide="user"></i> Profile</a></li>
+		</ul>
+		<a href="#" data-logout style="text-decoration:none;"><button class="logout-btn"><i data-lucide="log-out"></i>
+				Logout</button></a>
+	</div>
+	<div class="main-wrapper">
+		<div class="topbar">
+			<h1>Dashboard</h1>
+			<div class="topbar-right">
+				<div class="search-box"><input type="text" placeholder="Search team, tasks…"></div>
+				<div class="user-badge" th:text="${#strings.substring(managerName ?: 'M', 0, 1).toUpperCase()}">M</div>
+			</div>
+		</div>
+		<div class="page-content">
+			<div class="stats-row">
+				<div class="stat-card">
+					<div class="stat-icon purple"><i data-lucide="users"></i></div>
+					<div class="stat-info">
+						<h3 th:text="${teamCount} ?: '0'">0</h3>
+						<p>Team Members</p>
+					</div>
+				</div>
+
+				<div class="stat-card">
+					<div class="stat-icon orange"><i data-lucide="check-square"></i></div>
+					<div class="stat-info">
+						<h3 th:text="${taskCount} ?: '0'">0</h3>
+						<p>Tasks Assigned</p>
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-icon blue"><i data-lucide="alert-circle"></i></div>
+					<div class="stat-info">
+						<h3 th:text="${overdueTasks} ?: '0'">0</h3>
+						<p>Overdue Tasks</p>
+					</div>
+				</div>
+			</div>
+
+			<!-- ── ANALYTICS SECTION ── -->
+			<p class="section-label">
+				<i data-lucide="bar-chart-2"></i> Analytics &amp; Insights
+			</p>
+			<div class="analytics-grid">
+
+				<!-- 1. Task Status Breakdown — Doughnut -->
+				<div class="card">
+					<div class="card-header">
+						<div><h2>Task Status</h2><p>Breakdown of all assigned tasks</p></div>
+						<span class="chart-badge chip-blue">Doughnut</span>
+					</div>
+					<div class="card-body">
+						<div class="chart-box"><canvas id="taskStatusChart"></canvas></div>
+						<div class="insight-row">
+							<span class="insight-chip chip-green"  id="chip-done">0 Done</span>
+							<span class="insight-chip chip-blue"   id="chip-inprog">0 In Progress</span>
+							<span class="insight-chip chip-orange" id="chip-pending">0 Pending</span>
+							<span class="insight-chip chip-purple" id="chip-review">0 Review</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 2. Task Priority — Pie -->
+				<div class="card">
+					<div class="card-header">
+						<div><h2>Task Priority</h2><p>Distribution across priority levels</p></div>
+						<span class="chart-badge chip-orange">Pie Chart</span>
+					</div>
+					<div class="card-body">
+						<div class="chart-box"><canvas id="taskPriorityChart"></canvas></div>
+						<div class="insight-row">
+							<span class="insight-chip chip-red"    id="chip-high">0 High</span>
+							<span class="insight-chip chip-orange" id="chip-medium">0 Medium</span>
+							<span class="insight-chip chip-green"  id="chip-low">0 Low</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 3. Tasks per Member — Bar (full width) -->
+				<div class="card card-full">
+					<div class="card-header">
+						<div><h2>Tasks per Team Member</h2><p>Number of tasks assigned to each member</p></div>
+						<span class="chart-badge chip-teal">Bar Chart</span>
+					</div>
+					<div class="card-body">
+						<div class="chart-box-tall"><canvas id="memberTaskChart"></canvas></div>
+					</div>
+				</div>
+
+				<!-- 4. Team Status — Pie -->
+				<div class="card">
+					<div class="card-header">
+						<div><h2>Team Status</h2><p>Active vs Inactive members</p></div>
+						<span class="chart-badge chip-green">Pie Chart</span>
+					</div>
+					<div class="card-body">
+						<div class="chart-box"><canvas id="teamStatusChart"></canvas></div>
+						<div class="insight-row">
+							<span class="insight-chip chip-green" id="chip-active-team">0 Active</span>
+							<span class="insight-chip chip-red"   id="chip-inactive-team">0 Inactive</span>
+						</div>
+					</div>
+				</div>
+
+				<!-- 5. Verification Status — Doughnut -->
+				<div class="card">
+					<div class="card-header">
+						<div><h2>Verification Status</h2><p>Task review and approval breakdown</p></div>
+						<span class="chart-badge chip-purple">Doughnut</span>
+					</div>
+					<div class="card-body">
+						<div class="chart-box"><canvas id="verificationChart"></canvas></div>
+						<div class="insight-row">
+							<span class="insight-chip chip-green"  id="chip-approved">0 Approved</span>
+							<span class="insight-chip chip-red"    id="chip-rejected">0 Rejected</span>
+							<span class="insight-chip chip-orange" id="chip-waiting">0 Waiting</span>
+							<span class="insight-chip chip-blue"   id="chip-unverified">0 Open</span>
+						</div>
+					</div>
+				</div>
+
+			</div><!-- end analytics-grid -->
+
+			<!-- ── OVERVIEW LABEL ── -->
+			<p class="section-label" style="margin-top:28px;">
+				<i data-lucide="layout-list"></i> Overview
+			</p>
+
+			<div class="dashboard-grid">
+				<div class="card">
+					<div class="card-header">
+						<div>
+							<h2>Team Members</h2>
+							<p>Your direct reports</p>
+						</div><a th:href="@{/manager/team}" class="btn-link">View All</a>
+					</div>
+					<div class="table-wrap">
+						<table>
+    <caption class="sr-only">Manager Dashboard Table</caption>
+							<thead>
+								<tr>
+									<th>Member</th>
+									<th>Role</th>
+									<th>Status</th>
+									<th>Tasks</th>
+								</tr>
+							</thead>
+							<tbody>
+								<tr th:each="member : ${teamMembers}">
+									<td>
+										<div class="member-cell">
+											<div class="member-avatar"
+												th:text="${#strings.substring(member.username ?: 'M', 0, 1).toUpperCase()}">
+												M</div>
+											<div>
+												<div style="font-weight:600;font-size:13.5px;"
+													th:text="${member.username}">Member</div>
+												<div style="font-size:11px;color:#6b7280;" th:text="${member.email}">
+													email</div>
+											</div>
+										</div>
+									</td>
+									<td><span class="role-badge" th:text="${member.role}">Role</span></td>
+									<td>
+										<span class="status-badge active" th:if="${member.status == 'active' or member.status == null}">Active</span>
+										<span class="status-badge inactive" th:unless="${member.status == 'active' or member.status == null}">Inactive</span>
+									</td>
+									<td style="font-weight:600;">—</td>
+								</tr>
+								<tr th:if="${teamMembers == null or #lists.isEmpty(teamMembers)}">
+									<td colspan="4">
+										<div class="empty-state"><i data-lucide="users"
+												style="width:40px;height:40px;opacity:.3;"></i>
+											<h3>No Team Members</h3>
+										</div>
+									</td>
+								</tr>
+							</tbody>
+						</table>
+					</div>
+				</div>
+				<div class="right-col">
+					<div class="card manager-profile-card">
+						<div class="manager-avatar-lg"
+							th:text="${#strings.substring(managerName ?: 'M', 0, 1).toUpperCase()}">M</div>
+						<div class="manager-name" th:text="${managerName} ?: 'Manager'">Manager</div>
+						<div class="manager-role-label">Manager</div>
+						<div class="manager-stats">
+							<div class="mgr-stat">
+								<h4 th:text="${teamCount} ?: '0'">0</h4>
+								<p>Team</p>
+							</div>
+
+							<div class="mgr-stat">
+								<h4 th:text="${taskCount} ?: '0'">0</h4>
+								<p>Tasks</p>
+							</div>
+						</div>
+					</div>
+					<div class="card">
+						<div class="card-header">
+							<div>
+								<h2>Pending Tasks</h2>
+								<p>Tasks requiring attention</p>
+							</div><a th:href="@{/manager/tasks}" class="btn-link">View All</a>
+						</div>
+						<div th:if="${pendingTaskList == null or #lists.isEmpty(pendingTaskList)}"
+							style="text-align:center;color:#6b7280;padding:20px;font-size:13px;">No pending tasks.</div>
+						<div class="task-item" th:each="task : ${pendingTaskList}">
+							<div class="task-check" th:classappend="${task.done} ? 'done' : ''"></div>
+							<div style="flex:1;">
+								<div class="task-name" th:classappend="${task.done} ? 'done' : ''"
+									th:text="${task.name}">Task</div>
+							</div>
+							<span class="task-priority" th:text="${task.priority}">Medium</span>
+						</div>
+					</div>
+
+					<div class="card">
+						<div class="card-header">
+							<div>
+								<h2>Quick Actions</h2>
+								<p>Common tasks</p>
+							</div>
+						</div>
+						<div class="quick-actions">
+							<a th:href="@{/manager/team}" class="quick-action-btn"><span class="qa-icon"
+									style="background:#dff5ea;"><i data-lucide="users"
+										style="color:#1b7a46;"></i></span><span>My Team</span></a>
+							<a th:href="@{/manager/tasks}" class="quick-action-btn"><span class="qa-icon"
+									style="background:#fce9d8;"><i data-lucide="check-square"
+										style="color:#b45309;"></i></span><span>Tasks</span></a>
+							<a th:href="@{/manager/reports}" class="quick-action-btn"><span class="qa-icon"
+									style="background:#e9e2ff;"><i data-lucide="file-bar-chart"
+										style="color:#5b21b6;"></i></span><span>Reports</span></a>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		var hamburger = document.getElementById('hamburgerBtn'), sidebar = document.getElementById('sidebar'), overlay = document.getElementById('sidebarOverlay');
+		function openSidebar() {sidebar.classList.add('open'); overlay.classList.add('active'); document.body.style.overflow = 'hidden';}
+		function closeSidebar() {sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow = '';}
+		if (hamburger) hamburger.addEventListener('click', openSidebar);
+		if (overlay) overlay.addEventListener('click', closeSidebar);
+		lucide.createIcons();
+	</script>
+
+	<!-- ── Thymeleaf → JS bridge ── -->
+	<script th:inline="javascript">
+	/*<![CDATA[*/
+	const DB = {
+		statusDone:       /*[[${chartStatusDone}]]*/ 0,
+		statusInProgress: /*[[${chartStatusInProgress}]]*/ 0,
+		statusPending:    /*[[${chartStatusPending}]]*/ 0,
+		statusReview:     /*[[${chartStatusReview}]]*/ 0,
+		priorityHigh:     /*[[${chartPriorityHigh}]]*/ 0,
+		priorityMedium:   /*[[${chartPriorityMedium}]]*/ 0,
+		priorityLow:      /*[[${chartPriorityLow}]]*/ 0,
+		memberLabels:     /*[[${chartMemberLabels}]]*/ [],
+		memberTaskCounts: /*[[${chartMemberTaskCounts}]]*/ [],
+		activeTeam:       /*[[${chartActiveTeam}]]*/ 0,
+		inactiveTeam:     /*[[${chartInactiveTeam}]]*/ 0,
+		verified:         /*[[${chartVerified}]]*/ 0,
+		rejected:         /*[[${chartRejected}]]*/ 0,
+		waiting:          /*[[${chartWaiting}]]*/ 0,
+		unverified:       /*[[${chartUnverified}]]*/ 0,
+		totalMyTasks:     /*[[${chartTotalMyTasks}]]*/ 0
+	};
+	/*]]>*/
+	</script>
+
+	<script>
+	// ── Chart.js global defaults ──────────────────────────────────────────
+	Chart.defaults.font.family = "'Poppins', sans-serif";
+	Chart.defaults.font.size   = 12;
+	Chart.defaults.color       = '#6b7280';
+	Chart.defaults.plugins.legend.labels.usePointStyle     = true;
+	Chart.defaults.plugins.legend.labels.pointStyleWidth   = 10;
+	Chart.defaults.plugins.legend.labels.padding           = 18;
+	Chart.defaults.plugins.tooltip.padding                 = 10;
+	Chart.defaults.plugins.tooltip.cornerRadius            = 10;
+	Chart.defaults.plugins.tooltip.titleFont               = { weight: '700' };
+
+	const PRIMARY = '#17455e', GREEN = '#1b7a46', RED = '#d11a2a',
+	      BLUE = '#2563eb', ORANGE = '#c05621', PURPLE = '#6b46c1',
+	      TEAL = '#0891b2', AMBER = '#d97706';
+
+	const pctLabel = ctx => {
+		const total = ctx.dataset.data.reduce((a, b) => a + b, 0);
+		const pct   = total > 0 ? Math.round(ctx.parsed / total * 100) : 0;
+		return ` ${ctx.label}: ${ctx.parsed} (${pct}%)`;
+	};
+
+	// ── Update insight chips and initialize charts ──────────────────────
+	window.initDashboardCharts = function () {
+		if (window.dashboardCharts) {
+			Object.keys(window.dashboardCharts).forEach(function (key) {
+				if (window.dashboardCharts[key]) {
+					try { window.dashboardCharts[key].destroy(); } catch (e) {}
+				}
+			});
+		}
+		window.dashboardCharts = {};
+
+		document.getElementById('chip-done').textContent       = DB.statusDone + ' Done';
+		document.getElementById('chip-inprog').textContent     = DB.statusInProgress + ' In Progress';
+		document.getElementById('chip-pending').textContent    = DB.statusPending + ' Pending';
+		document.getElementById('chip-review').textContent     = DB.statusReview + ' Review';
+		document.getElementById('chip-high').textContent       = DB.priorityHigh + ' High';
+		document.getElementById('chip-medium').textContent     = DB.priorityMedium + ' Medium';
+		document.getElementById('chip-low').textContent        = DB.priorityLow + ' Low';
+		document.getElementById('chip-active-team').textContent   = DB.activeTeam + ' Active';
+		document.getElementById('chip-inactive-team').textContent = DB.inactiveTeam + ' Inactive';
+		document.getElementById('chip-approved').textContent   = DB.verified + ' Approved';
+		document.getElementById('chip-rejected').textContent   = DB.rejected + ' Rejected';
+		document.getElementById('chip-waiting').textContent    = DB.waiting + ' Waiting';
+		document.getElementById('chip-unverified').textContent = DB.unverified + ' Open';
+
+		// ── 1. Task Status — Doughnut ─────────────────────────────────────────
+		window.dashboardCharts.status = new Chart(document.getElementById('taskStatusChart'), {
+			type: 'doughnut',
+			data: {
+				labels: ['Done', 'In Progress', 'Pending', 'Waiting Review'],
+				datasets: [{
+					data: [DB.statusDone, DB.statusInProgress, DB.statusPending, DB.statusReview],
+					backgroundColor: [
+						'rgba(27,122,70,.85)', 'rgba(37,99,235,.85)',
+						'rgba(192,86,33,.85)', 'rgba(107,70,193,.85)'
+					],
+					borderColor: '#fff', borderWidth: 3, hoverOffset: 10
+				}]
+			},
+			options: {
+				responsive: true, maintainAspectRatio: false, cutout: '60%',
+				plugins: {
+					legend: { position: 'bottom' },
+					tooltip: { callbacks: { label: pctLabel } }
+				}
+			}
+		});
+
+		// ── 2. Task Priority — Pie ────────────────────────────────────────────
+		window.dashboardCharts.priority = new Chart(document.getElementById('taskPriorityChart'), {
+			type: 'pie',
+			data: {
+				labels: ['High', 'Medium', 'Low'],
+				datasets: [{
+					data: [DB.priorityHigh, DB.priorityMedium, DB.priorityLow],
+					backgroundColor: [
+						'rgba(209,26,42,.85)', 'rgba(192,86,33,.80)', 'rgba(27,122,70,.80)'
+					],
+					borderColor: '#fff', borderWidth: 3, hoverOffset: 10
+				}]
+			},
+			options: {
+				responsive: true, maintainAspectRatio: false,
+				plugins: {
+					legend: { position: 'bottom' },
+					tooltip: { callbacks: { label: pctLabel } }
+				}
+			}
+		});
+
+		// ── 3. Tasks per Member — Bar (full width) ────────────────────────────
+		window.dashboardCharts.member = new Chart(document.getElementById('memberTaskChart'), {
+			type: 'bar',
+			data: {
+				labels: DB.memberLabels.length ? DB.memberLabels : ['No Members'],
+				datasets: [{
+					label: 'Tasks Assigned',
+					data: DB.memberTaskCounts.length ? DB.memberTaskCounts : [0],
+					backgroundColor: 'rgba(23,69,94,.18)',
+					borderColor: PRIMARY,
+					borderWidth: 2,
+					borderRadius: 8,
+					borderSkipped: false
+				}]
+			},
+			options: {
+				responsive: true, maintainAspectRatio: false,
+				plugins: { legend: { display: false } },
+				scales: {
+					y: { beginAtZero: true, ticks: { stepSize: 1, precision: 0 }, grid: { color: '#f0f6f9' } },
+					x: { grid: { display: false } }
+				}
+			}
+		});
+
+		// ── 4. Team Status — Pie ──────────────────────────────────────────────
+		window.dashboardCharts.team = new Chart(document.getElementById('teamStatusChart'), {
+			type: 'pie',
+			data: {
+				labels: ['Active', 'Inactive'],
+				datasets: [{
+					data: [DB.activeTeam || 0, DB.inactiveTeam || 0],
+					backgroundColor: ['rgba(27,122,70,.85)', 'rgba(209,26,42,.80)'],
+					borderColor: '#fff', borderWidth: 3, hoverOffset: 10
+				}]
+			},
+			options: {
+				responsive: true, maintainAspectRatio: false,
+				plugins: {
+					legend: { position: 'bottom' },
+					tooltip: { callbacks: { label: pctLabel } }
+				}
+			}
+		});
+
+		// ── 5. Verification Status — Doughnut ────────────────────────────────
+		window.dashboardCharts.verification = new Chart(document.getElementById('verificationChart'), {
+			type: 'doughnut',
+			data: {
+				labels: ['Approved', 'Rejected', 'Waiting Review', 'Open'],
+				datasets: [{
+					data: [DB.verified, DB.rejected, DB.waiting, DB.unverified],
+					backgroundColor: [
+						'rgba(27,122,70,.85)', 'rgba(209,26,42,.80)',
+						'rgba(192,86,33,.80)', 'rgba(37,99,235,.75)'
+					],
+					borderColor: '#fff', borderWidth: 3, hoverOffset: 10
+				}]
+			},
+			options: {
+				responsive: true, maintainAspectRatio: false, cutout: '60%',
+				plugins: {
+					legend: { position: 'bottom' },
+					tooltip: { callbacks: { label: pctLabel } }
+				}
+			}
+		});
+	};
+
+	window.initDashboardCharts();
+	</script>
+
+	<script th:src="@{/auth.js}"></script>
+	<script th:src="@{/notifications.js}"></script>
+</body>
+
+</html>

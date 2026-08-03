@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="100%" height="100%">
+  <defs>
+    <!-- Background Gradient matching login page brand-icon -->
+    <linearGradient id="brandGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0B3B4B" />
+      <stop offset="100%" stop-color="#1C5D6E" />
+    </linearGradient>
+  </defs>
+
+  <!-- Background squircle matching the 24px border-radius ratio of 64px width (24/64 * 512 = 192) -->
+  <rect x="0" y="0" width="512" height="512" rx="192" fill="url(#brandGrad)" />
+  
+  <!-- High-fidelity White Shield (representation of the shield emoji 🛡️ used on the login page) -->
+  <!-- Outer Shield contour -->
+  <path d="M256,80 L395,130 V260 C395,360 256,432 256,432 C256,432 117,360 117,260 V130 Z" 
+        fill="none" stroke="#FFFFFF" stroke-width="24" stroke-linejoin="round" stroke-linecap="round" />
+        
+  <!-- Inner Shield core -->
+  <path d="M256,120 L355,155 V250 C355,325 256,380 256,380 C256,380 157,325 157,250 V155 Z" 
+        fill="#FFFFFF" />
+</svg>

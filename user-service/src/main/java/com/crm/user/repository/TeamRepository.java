@@ -1,0 +1,36 @@
+package com.crm.user.repository;
+
+import java.util.List;
+import java.util.Optional;
+
+import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
+import org.springframework.stereotype.Repository;
+
+import com.crm.user.model.Team;
+import com.crm.user.model.User;
+
+@Repository
+public interface TeamRepository extends JpaRepository<Team, Long> {
+
+    /** All teams for a tenant, ordered by name. */
+    List<Team> findByTenantSegmentOrderByNameAsc(String tenantSegment);
+
+    /** All teams for a tenant, ordered by ID descending (newest first). */
+    List<Team> findByTenantSegmentOrderByIdDesc(String tenantSegment);
+
+    /** Find the team assigned to a specific manager. */
+    Optional<Team> findByManager(User manager);
+
+    /** Find the team(s) a user is a member of (within a tenant), with members and manager eagerly loaded. */
+    @Query("SELECT DISTINCT t FROM Team t LEFT JOIN FETCH t.members LEFT JOIN FETCH t.manager WHERE :user MEMBER OF t.members AND t.tenantSegment = :tenant")
+    List<Team> findByMemberAndTenant(@Param("user") User user, @Param("tenant") String tenant);
+
+    @Query("SELECT DISTINCT t FROM Team t LEFT JOIN FETCH t.members LEFT JOIN FETCH t.manager WHERE t.manager.id = :#{#manager.id}")
+    List<Team> findByManagerWithMembers(@Param("manager") User manager);
+    boolean existsByNameAndTenantSegment(String name, String tenantSegment);
+
+    /** Check if a team name already exists in a tenant (excluding a given id). */
+    boolean existsByNameAndTenantSegmentAndIdNot(String name, String tenantSegment, Long id);
+}

@@ -1,0 +1,16 @@
+server:
+  port: 8088
+
+spring:
+  application:
+    name: dashboard-service
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+app:
+  jwt:
+    secret: Y3JtU2VjcmV0S2V5Rm9yVGVuYW50Q3JtQXBwbGljYXRpb24yMDI2
+    expiration-ms: 28800000

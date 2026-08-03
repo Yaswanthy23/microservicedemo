@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Manager — My Team</title>
+	<link rel="stylesheet" th:href="@{/manager.css}">
+	<link rel="stylesheet" th:href="@{/notifications.css}">
+	<script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
+	<style>
+		/* ── Employee Detail Modal ── */
+		.emp-modal-overlay {
+			display: none;
+			position: fixed;
+			inset: 0;
+			background: rgba(0, 0, 0, .45);
+			backdrop-filter: blur(3px);
+			z-index: 2000;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.emp-modal-overlay.open {
+			display: flex;
+		}
+
+		.emp-modal {
+			background: white;
+			border-radius: 24px;
+			width: 90%;
+			max-width: 860px;
+			max-height: 88vh;
+			display: flex;
+			flex-direction: column;
+			box-shadow: 0 20px 60px rgba(0, 0, 0, .2);
+			overflow: hidden;
+			animation: modalIn .25s ease;
+		}
+
+		@keyframes modalIn {
+			from { opacity: 0; transform: translateY(20px) scale(.97) }
+			to   { opacity: 1; transform: translateY(0) scale(1) }
+		}
+
+		.emp-modal-header {
+			display: flex;
+			align-items: center;
+			gap: 18px;
+			padding: 24px 28px 20px;
+			border-bottom: 1px solid #edf3f6;
+			flex-shrink: 0;
+		}
+
+		.emp-modal-avatar {
+			width: 64px;
+			height: 64px;
+			border-radius: 50%;
+			background: #17455e;
+			color: white;
+			font-size: 26px;
+			font-weight: 700;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
+		}
+
+		.emp-modal-title { flex: 1; }
+		.emp-modal-title h2 { font-size: 20px; font-weight: 700; color: #163647; margin: 0 0 4px; }
+		.emp-modal-title p  { font-size: 13px; color: #6b7280; margin: 0; }
+
+		.emp-modal-close {
+			width: 36px; height: 36px;
+			border-radius: 50%; border: none;
+			background: #f3f8fb; color: #6b7280;
+			cursor: pointer;
+			display: flex; align-items: center; justify-content: center;
+			transition: background .2s;
+		}
+
+		.emp-modal-close:hover { background: #fdecec; color: #d11a2a; }
+
+		.emp-modal-body {
+			flex: 1; overflow-y: auto;
+			padding: 24px 28px;
+			display: flex; flex-direction: column; gap: 22px;
+		}
+
+		.modal-loading { display: flex; align-items: center; justify-content: center; padding: 48px; color: #6b7280; gap: 12px; font-size: 14px; }
+		.spinner { width: 22px; height: 22px; border: 3px solid #e5edf2; border-top-color: #17455e; border-radius: 50%; animation: spin .7s linear infinite; }
+		@keyframes spin { to { transform: rotate(360deg); } }
+	</style>
+</head>
+
+<body>
+	<div class="mobile-topbar"><button class="hamburger"
+			id="hamburgerBtn"><span></span><span></span><span></span></button><span class="mobile-title">Manager</span>
+	</div>
+	<div class="sidebar-overlay" id="sidebarOverlay"></div>
+	<div class="sidebar" id="sidebar">
+		<div class="sidebar-logo">
+			<div class="logo-icon"><i data-lucide="briefcase"></i></div>
+			<h2>Manager</h2>
+		</div>
+		<div class="profile-box">
+			<div class="profile-avatar" th:text="${#strings.substring(managerName ?: 'M', 0, 1).toUpperCase()}">M</div>
+			<h3 th:text="${managerName} ?: 'Manager'">Manager</h3>
+			<p>Manager</p>
+		</div>
+		<ul class="sidebar-menu">
+			<li><a th:href="@{/manager/dashboard}"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+			<li class="active"><a th:href="@{/manager/team}"><i data-lucide="users"></i> My Team</a></li>
+			<li><a th:href="@{/manager/tasks}"><i data-lucide="check-square"></i> Tasks</a></li>
+			<li><a th:href="@{/manager/attendance}"><i data-lucide="calendar-check"></i> Attendance</a></li>
+			<li><a th:href="@{/manager/leave}"><i data-lucide="file-text"></i> Leave Request</a></li>
+			<li><a th:href="@{/manager/meetings}"><i data-lucide="calendar-clock"></i> Meetings</a></li>
+			<li><a th:href="@{/manager/calendar}"><i data-lucide="calendar"></i> Calendar</a></li>
+			<li><a th:href="@{/manager/performance}"><i data-lucide="bar-chart-2"></i> Performance</a></li>
+			<li><a th:href="@{/manager/reports}"><i data-lucide="file-bar-chart"></i> Reports</a></li>
+			<li><a th:href="@{/manager/payroll}"><i data-lucide="banknote"></i> Payslip</a></li>
+			<li><a th:href="@{/manager/profile}"><i data-lucide="user"></i> Profile</a></li>
+		</ul>
+		<a href="#" data-logout style="text-decoration:none;"><button class="logout-btn"><i data-lucide="log-out"></i>
+				Logout</button></a>
+	</div>
+
+	<div class="main-wrapper">
+		<div class="topbar">
+			<div>
+				<h1>My Team</h1>
+				<p class="topbar-subtitle">Click any member to view details &amp; attendance</p>
+			</div>
+			<div class="topbar-right">
+				<div class="search-box"><input type="text" id="globalSearch" placeholder="Search team…"></div>
+				<div class="user-badge" th:text="${#strings.substring(managerName ?: 'M', 0, 1).toUpperCase()}">M</div>
+			</div>
+		</div>
+
+		<div class="page-content">
+
+			<!-- No team assigned -->
+			<div th:if="${myTeam == null}" class="no-team-card">
+				<i data-lucide="users" style="width:52px;height:52px;display:block;margin:0 auto 12px;"></i>
+				<h3>No Team Assigned Yet</h3>
+				<p>Ask your HR to create a team and assign you as the manager.</p>
+			</div>
+
+			<!-- Team assigned -->
+			<div th:unless="${myTeam == null}">
+				<!-- My Teams Selector Grid -->
+				<h3 style="font-size:16px;font-weight:700;color:#163647;margin:0 0 14px;">Select Team</h3>
+				<div class="teams-grid">
+					<div th:each="team, iter : ${managedTeams}" 
+					     th:class="'team-selector-card ' + ${iter.first ? 'active' : ''}" 
+					     th:data-id="${team.id}"
+					     onclick="selectTeam(this)">
+						<div class="team-card-inner">
+							<div class="team-icon-box" style="background:#dcecf5;color:#17455e;width:44px;height:44px;border-radius:12px;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+								<i data-lucide="users-round" style="width:20px;height:20px;"></i>
+							</div>
+							<div class="team-info-content">
+								<h4 th:text="${team.name}">Team Name</h4>
+								<p th:text="${#lists.size(team.members)} + ' member(s)'">0 member(s)</p>
+							</div>
+						</div>
+					</div>
+				</div>
+
+				<!-- Details section for each team -->
+				<div th:each="team, iter : ${managedTeams}" 
+				     th:id="'team-section-' + ${team.id}" 
+				     class="team-details-section" 
+				     th:style="${iter.first ? 'display: block;' : 'display: none;'}">
+					
+					<!-- Stats for this specific team -->
+					<div class="stats-row" style="grid-template-columns:repeat(3,1fr);margin-bottom:20px;">
+						<div class="stat-card">
+							<div class="stat-icon purple"><i data-lucide="users"></i></div>
+							<div class="stat-info">
+								<h3 th:text="${#lists.size(team.members)}">0</h3>
+								<p>Total Members</p>
+							</div>
+						</div>
+						<div class="stat-card">
+							<div class="stat-icon green"><i data-lucide="user-check"></i></div>
+							<div class="stat-info">
+								<h3 th:text="${#lists.size(team.members.?[status == 'active' or status == null])}">0</h3>
+								<p>Active</p>
+							</div>
+						</div>
+						<div class="stat-card">
+							<div class="stat-icon orange"><i data-lucide="user-x"></i></div>
+							<div class="stat-info">
+								<h3 th:text="${#lists.size(team.members.?[status == 'inactive'])}">0</h3>
+								<p>Inactive</p>
+							</div>
+						</div>
+					</div>
+
+					<!-- Members table for this specific team -->
+					<div class="card">
+						<div class="card-header">
+							<div>
+								<h2>Team Members</h2>
+								<p th:text="${#lists.size(team.members)} + ' member(s) in ' + ${team.name}">0 member(s)</p>
+							</div>
+						</div>
+						<div class="table-wrap">
+							<table class="teamTable">
+    <caption class="sr-only">Manager Team Table</caption>
+								<thead>
+									<tr>
+										<th>#</th>
+										<th>Member</th>
+										<th>Email</th>
+										<th>Status</th>
+									</tr>
+								</thead>
+								<tbody>
+									<tr th:each="member, stat : ${team.members}" th:data-id="${member.id}"
+										th:data-name="${member.username}" onclick="openMemberModal(this)">
+										<td th:text="${stat.count}">1</td>
+										<td>
+											<div class="member-cell">
+												<div class="member-avatar"
+													th:text="${#strings.substring(member.username ?: 'M', 0, 1).toUpperCase()}">
+													M</div>
+												<span style="font-weight:600;" th:text="${member.username}">Member</span>
+											</div>
+										</td>
+										<td style="color:#6b7280;font-size:13px;" th:text="${member.email}">email</td>
+										<td>
+											<span class="status-badge active"
+												th:if="${member.status == 'active' or member.status == null}">Active</span>
+											<span class="status-badge inactive"
+												th:unless="${member.status == 'active' or member.status == null}">Inactive</span>
+										</td>
+									</tr>
+									<tr th:if="${#lists.isEmpty(team.members)}">
+										<td colspan="4">
+											<div class="empty-state">
+												<i data-lucide="users" style="width:48px;height:48px;opacity:.3;"></i>
+												<h3>No Members Yet</h3>
+												<p>Ask HR to add employees to your team.</p>
+											</div>
+										</td>
+									</tr>
+								</tbody>
+							</table>
+						</div>
+					</div>
+				</div>
+			</div>
+
+		</div>
+	</div>
+
+	<!-- ── Member Detail Modal ── -->
+	<div class="emp-modal-overlay" id="empModalOverlay" onclick="closeEmpModal(event)">
+		<div class="emp-modal" id="empModal">
+			<div class="emp-modal-header">
+				<div class="emp-modal-avatar" id="modalAvatar">?</div>
+				<div class="emp-modal-title">
+					<h2 id="modalName">Loading…</h2>
+					<p id="modalEmail"></p>
+				</div>
+				<button class="emp-modal-close" onclick="closeModal()"><i data-lucide="x"></i></button>
+			</div>
+			<div class="emp-modal-body" id="modalBody">
+				<div class="modal-loading">
+					<div class="spinner"></div> Loading details…
+				</div>
+			</div>
+		</div>
+	</div>
+
+	<script>
+		// ── Sidebar ──
+		var hamburger = document.getElementById('hamburgerBtn'), sidebar = document.getElementById('sidebar'), overlay = document.getElementById('sidebarOverlay');
+		function openSidebar() {sidebar.classList.add('open'); overlay.classList.add('active'); document.body.style.overflow = 'hidden';}
+		function closeSidebar() {sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow = '';}
+		if (hamburger) hamburger.addEventListener('click', openSidebar);
+		if (overlay) overlay.addEventListener('click', closeSidebar);
+
+		// ── Team Selection ──
+		function selectTeam(card) {
+			document.querySelectorAll('.team-selector-card').forEach(c => {
+				c.classList.remove('active');
+			});
+			card.classList.add('active');
+
+			document.querySelectorAll('.team-details-section').forEach(s => {
+				s.style.display = 'none';
+			});
+			var teamId = card.getAttribute('data-id');
+			var targetSection = document.getElementById('team-section-' + teamId);
+			if (targetSection) {
+				targetSection.style.display = 'block';
+			}
+		}
+
+		// ── Search ──
+		var gs = document.getElementById('globalSearch');
+		if (gs) gs.addEventListener('input', function () {
+			var q = this.value.toLowerCase();
+			document.querySelectorAll('.teamTable tbody tr').forEach(r => {r.style.display = r.textContent.toLowerCase().includes(q) ? '' : 'none';});
+		});
+
+		// ── Modal ──
+		var modalOverlay = document.getElementById('empModalOverlay');
+
+		function openMemberModal(row) {
+			var id = row.getAttribute('data-id');
+			var name = row.getAttribute('data-name');
+			document.getElementById('modalName').textContent = name;
+			document.getElementById('modalEmail').textContent = '';
+			document.getElementById('modalAvatar').textContent = name.charAt(0).toUpperCase();
+			document.getElementById('modalBody').innerHTML = '<div class="modal-loading"><div class="spinner"></div> Loading details…</div>';
+			modalOverlay.classList.add('open');
+			document.body.style.overflow = 'hidden';
+
+			fetch('/manager/api/member/' + id)
+				.then(r => r.json())
+				.then(data => renderModal(data))
+				.catch(() => {
+					document.getElementById('modalBody').innerHTML = '<p style="padding:24px;color:#d11a2a;">Failed to load details.</p>';
+				});
+		}
+
+		function closeModal() {
+			modalOverlay.classList.remove('open');
+			document.body.style.overflow = '';
+		}
+
+		function closeEmpModal(e) {
+			if (e.target === modalOverlay) closeModal();
+		}
+
+		function statusBadge(s) {
+			var map = {
+				'present': '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#dff5ea;color:#1b7a46;">Present</span>',
+				'late': '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fce9d8;color:#b45309;">Late</span>',
+				'absent': '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fdecec;color:#d11a2a;">Absent</span>',
+				'half-day': '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fef3c7;color:#92400e;">Half Day</span>',
+				'weekend': '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#e9e2ff;color:#6b46c1;">Weekend</span>',
+				'holiday': '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#fce7f3;color:#9d174d;">Holiday</span>'
+			};
+			return map[s] || '<span style="color:#9ca3af;">—</span>';
+		}
+
+		function renderModal(d) {
+			if (d.error) {
+				document.getElementById('modalBody').innerHTML = '<p style="padding:24px;color:#d11a2a;">' + d.error + '</p>';
+				return;
+			}
+
+			document.getElementById('modalName').textContent = d.username;
+			document.getElementById('modalEmail').textContent = d.email;
+			document.getElementById('modalAvatar').textContent = d.username.charAt(0).toUpperCase();
+
+			// Attendance rows
+			var rows = '';
+			(d.attendance || []).forEach(function (a) {
+				var rowClass = a.status === 'weekend' ? 'row-weekend' : (a.status === 'absent' ? 'row-absent' : (a.status === 'holiday' ? 'row-holiday' : ''));
+				var checkIn = a.checkIn !== '—' ? '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#dff5ea;color:#1b7a46;">' + a.checkIn + '</span>' : '<span style="color:#9ca3af;">—</span>';
+				var checkOut = a.checkOut !== '—' ? '<span style="display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:600;background:#dcecf5;color:#17455e;">' + a.checkOut + '</span>' : '<span style="color:#9ca3af;">—</span>';
+				rows += '<tr class="' + rowClass + '">'
+					+ '<td style="font-weight:600;">' + a.date + '</td>'
+					+ '<td>' + checkIn + '</td>'
+					+ '<td>' + checkOut + '</td>'
+					+ '<td style="font-weight:600;color:#17455e;">' + a.worked + '</td>'
+					+ '<td style="color:#b45309;">' + a.breakTime + '</td>'
+					+ '<td>' + (a.dayType !== '—' ? '<span style="font-size:12px;font-weight:600;color:#17455e;">' + a.dayType + '</span>' : '<span style="color:#9ca3af;">—</span>') + '</td>'
+					+ '<td>' + statusBadge(a.status) + '</td>'
+					+ '</tr>';
+			});
+
+			document.getElementById('modalBody').innerHTML =
+				// Profile tiles
+				'<div class="emp-info-grid">'
+				+ '  <div class="emp-info-tile"><div class="label">Username</div><div class="value">' + d.username + '</div></div>'
+				+ '  <div class="emp-info-tile"><div class="label">Email</div><div class="value" style="font-size:13px;word-break:break-all;">' + d.email + '</div></div>'
+				+ '  <div class="emp-info-tile"><div class="label">Role</div><div class="value"><span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#f3f8fb;color:#163647;">' + d.role + '</span></div></div>'
+				+ '  <div class="emp-info-tile"><div class="label">Status</div><div class="value">'
+				+ (d.status === 'active'
+					? '<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#dff5ea;color:#1b7a46;">Active</span>'
+					: '<span style="display:inline-flex;align-items:center;padding:4px 12px;border-radius:20px;font-size:12px;font-weight:700;background:#fdecec;color:#d11a2a;">Inactive</span>')
+				+ '  </div></div>'
+				+ '  <div class="emp-info-tile"><div class="label">Update Status</div><div class="value">'
+				+ '    <form action="/manager/update-member-status/' + d.id + '" method="post" style="display:grid;gap:8px;">'
+				+ '      <select name="status" style="padding:8px 10px;border:1px solid #dbe7ee;border-radius:10px;font-size:13px;">'
+				+ '        <option value="active" ' + (d.status === 'active' ? 'selected' : '') + '>Active</option>'
+				+ '        <option value="inactive" ' + (d.status === 'inactive' ? 'selected' : '') + '>Inactive</option>'
+				+ '      </select>'
+				+ '      <button type="submit" style="border:none;border-radius:10px;background:#17455e;color:#fff;padding:8px 12px;font-size:12px;font-weight:700;cursor:pointer;">Save Status</button>'
+				+ '    </form>'
+				+ '  </div></div>'
+				+ '</div>'
+
+				// Attendance stats
+				+ '<div>'
+				+ '  <h3 style="font-size:15px;font-weight:700;color:#163647;margin:0 0 12px;">Last 30 Days Attendance</h3>'
+				+ '  <div class="emp-att-stats">'
+				+ '    <div class="emp-att-stat green"><div class="num">' + d.presentDays + '</div><div class="lbl">Present</div></div>'
+				+ '    <div class="emp-att-stat red"><div class="num">' + d.absentDays + '</div><div class="lbl">Absent</div></div>'
+				+ '    <div class="emp-att-stat amber"><div class="num">' + d.halfDays + '</div><div class="lbl">Half Days</div></div>'
+				+ '    <div class="emp-att-stat purple"><div class="num">' + d.holidays + '</div><div class="lbl">Holidays</div></div>'
+				+ '  </div>'
+				+ '</div>'
+
+				// Attendance table
+				+ '<div style="overflow-x:auto;">'
+				+ '  <table class="emp-att-table">
+    <caption class="sr-only">Manager Team Table</caption>'
+				+ '    <thead><tr><th>Date</th><th>Check In</th><th>Check Out</th><th>Worked</th><th>Break</th><th>Day Type</th><th>Status</th></tr></thead>'
+				+ '    <tbody>' + (rows || '<tr><td colspan="7" style="text-align:center;padding:24px;color:#9ca3af;">No records found.</td></tr>') + '</tbody>'
+				+ '  </table>'
+				+ '</div>';
+
+			lucide.createIcons();
+		}
+
+		lucide.createIcons();
+	</script>
+	<script th:src="@{/auth.js}"></script>
+	<script th:src="@{/notifications.js}"></script>
+</body>
+
+</html>

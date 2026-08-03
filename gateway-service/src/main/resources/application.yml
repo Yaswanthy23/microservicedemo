@@ -1,0 +1,56 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway-service
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: auth-service
+          uri: lb://auth-service
+          predicates:
+            - Path=/api/auth/**, /login, /logout, /forgot-password, /reset-password
+
+        - id: admin-service
+          uri: lb://admin-service
+          predicates:
+            - Path=/admin/**, /superadmin/**, /api/admin/**
+
+        - id: employee-service
+          uri: lb://employee-service
+          predicates:
+            - Path=/employee/**, /api/employee/**, /api/tasks/**
+
+        - id: manager-service
+          uri: lb://manager-service
+          predicates:
+            - Path=/manager/**, /api/manager/**
+
+        - id: hr-service
+          uri: lb://hr-service
+          predicates:
+            - Path=/hr/**, /api/hr/**, /api/payroll/**
+
+        - id: holiday-service
+          uri: lb://holiday-service
+          predicates:
+            - Path=/holidays, /api/holidays/**
+
+        - id: notification-service
+          uri: lb://notification-service
+          predicates:
+            - Path=/api/notifications/**, /ws/**
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+
+app:
+  jwt:
+    secret: Y3JtU2VjcmV0S2V5Rm9yVGVuYW50Q3JtQXBwbGljYXRpb24yMDI2

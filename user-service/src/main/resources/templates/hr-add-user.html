@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>HR — Add Member</title>
+	<link rel="stylesheet" th:href="@{/hr.css}">
+	<link rel="stylesheet" th:href="@{/notifications.css}">
+	<script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
+	<style>
+		/* ── Reuse admin-style form card ── */
+		.au-form-card {
+			border: 2px solid rgba(23, 69, 94, 0.12);
+		}
+
+		.au-form-grid {
+			display: grid;
+			grid-template-columns: 1fr 1fr;
+			gap: 16px;
+		}
+
+		@media (max-width: 700px) {
+			.au-form-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		.form-group {
+			display: flex;
+			flex-direction: column;
+			margin-bottom: 4px;
+		}
+
+		.form-group label {
+			margin-bottom: 8px;
+			font-size: 13px;
+			font-weight: 600;
+			color: #163647;
+		}
+
+		.input-wrap {
+			position: relative;
+			display: flex;
+			align-items: center;
+		}
+
+		.input-wrap input,
+		.input-wrap select {
+			width: 100%;
+			height: 50px;
+			border: none;
+			border-radius: 14px;
+			background: #f5f9fb;
+			padding: 0 16px;
+			font-size: 14px;
+			font-family: 'Poppins', sans-serif;
+			color: #163647;
+			transition: background .25s, box-shadow .25s;
+		}
+
+		.input-wrap input:focus,
+		.input-wrap select:focus {
+			outline: none;
+			background: white;
+			box-shadow: 0 0 0 3px rgba(23, 69, 94, .14);
+		}
+
+		.input-wrap input::placeholder {
+			color: #8aa7b6;
+		}
+
+		.input-wrap input[type="password"],
+		.input-wrap input[type="text"][data-pw] {
+			padding-right: 44px;
+		}
+
+		.select-wrap {
+			position: relative;
+		}
+
+		.select-wrap .select-input {
+			appearance: none;
+			-webkit-appearance: none;
+			padding-right: 40px;
+			cursor: pointer;
+		}
+
+		.select-wrap .select-arrow {
+			position: absolute;
+			right: 14px;
+			top: 50%;
+			transform: translateY(-50%);
+			pointer-events: none;
+			color: #9ca3af;
+			display: flex;
+			align-items: center;
+		}
+
+		.eye-toggle {
+			position: absolute;
+			right: 12px;
+			top: 50%;
+			transform: translateY(-50%);
+			background: none;
+			border: none;
+			cursor: pointer;
+			padding: 0;
+			color: #9ca3af;
+			display: flex;
+			align-items: center;
+		}
+
+		.eye-toggle:hover {
+			color: #374151;
+		}
+
+		.form-actions {
+			display: flex;
+			justify-content: flex-end;
+			gap: 12px;
+			margin-top: 24px;
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 6px;
+			border: none;
+			height: 50px;
+			padding: 0 26px;
+			border-radius: 14px;
+			font-size: 14px;
+			font-weight: 600;
+			font-family: 'Poppins', sans-serif;
+			cursor: pointer;
+			transition: background .25s, transform .25s, box-shadow .25s;
+			white-space: nowrap;
+			text-decoration: none;
+		}
+
+		.btn-clear {
+			background: #edf3f6;
+			color: #163647;
+		}
+
+		.btn-clear:hover {
+			background: #dfeaf0;
+		}
+
+		.btn-primary {
+			background: #17455e;
+			color: white;
+			box-shadow: 0 6px 16px rgba(23, 69, 94, .22);
+		}
+
+		.btn-primary:hover {
+			background: #21556f;
+			transform: translateY(-2px);
+			box-shadow: 0 10px 22px rgba(23, 69, 94, .28);
+		}
+
+		/* Standard toast used from hr.css */
+	</style>
+</head>
+
+<body>
+	<div class="mobile-topbar">
+		<button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
+		<span class="mobile-title">HR</span>
+	</div>
+	<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+	<div class="sidebar" id="sidebar">
+		<div class="sidebar-logo">
+			<div class="logo-icon"><i data-lucide="users"></i></div>
+			<h2>HR</h2>
+		</div>
+		<div class="profile-box">
+			<div class="profile-avatar" th:text="${#strings.substring(adminName ?: 'H', 0, 1).toUpperCase()}">H</div>
+			<h3 th:text="${adminName} ?: 'HR User'">HR User</h3>
+			<p th:text="${adminRole} ?: 'HR'">HR</p>
+		</div>
+		<ul class="sidebar-menu">
+			<li><a th:href="@{/hr/dashboard}"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+			<li class="active"><a th:href="@{/hr/employees}"><i data-lucide="users"></i> Employees</a></li>
+			<li><a th:href="@{/hr/tasks}"><i data-lucide="check-square"></i> Tasks</a></li>
+			<li><a th:href="@{/hr/attendance}"><i data-lucide="calendar-check"></i> Attendance</a></li>
+			<li><a th:href="@{/hr/leaves}"><i data-lucide="file-text"></i> Leave Requests</a></li>
+			<li><a th:href="@{/hr/teams}"><i data-lucide="users-round"></i> Teams</a></li>
+			<li><a th:href="@{/hr/meetings}"><i data-lucide="calendar-clock"></i> Meetings</a></li>
+			<li><a th:href="@{/hr/calendar}"><i data-lucide="calendar"></i> Calendar</a></li>
+			<li><a th:href="@{/hr/performance}"><i data-lucide="bar-chart-2"></i> Performance</a></li>
+			<li><a th:href="@{/hr/reports}"><i data-lucide="file-bar-chart"></i> Reports</a></li>
+			<li><a th:href="@{/hr/payroll}"><i data-lucide="banknote"></i> Payroll</a></li>
+			<li><a th:href="@{/hr/profile}"><i data-lucide="user"></i> Profile</a></li>
+			<li><a th:href="@{/hr/settings}"><i data-lucide="settings"></i> Settings</a></li>
+		</ul>
+		<a href="#" data-logout style="text-decoration:none;">
+			<button class="logout-btn"><i data-lucide="log-out"></i> Logout</button>
+		</a>
+	</div>
+
+	<div class="main-wrapper">
+		<div class="topbar">
+			<div style="display:flex;align-items:center;gap:14px;">
+				<a th:href="@{/hr/employees}" class="btn btn-clear" style="height:40px;padding:0 16px;font-size:13px;">
+					<i data-lucide="arrow-left" style="width:15px;height:15px;"></i> Back
+				</a>
+				<div>
+					<h1>Add New Member</h1>
+					<p class="topbar-subtitle">Fill in the details to create a new account</p>
+				</div>
+			</div>
+			<div class="topbar-right">
+				<button onclick="document.getElementById('bulkUploadModal').style.display='flex'"
+					style="height:46px;padding:0 18px;font-size:14px;display:inline-flex;align-items:center;gap:6px;background:#f0f7fb;color:#17455e;border:1.5px solid #c3d8e8;border-radius:10px;cursor:pointer;font-weight:600;font-family:'Poppins',sans-serif;">
+					<i data-lucide="upload" style="width:16px;height:16px;"></i> Bulk Upload
+				</button>
+				<div class="user-badge" th:text="${#strings.substring(adminName ?: 'H', 0, 1).toUpperCase()}">H</div>
+			</div>
+		</div>
+
+		<div class="page-content">
+			<!-- Flash messages -->
+			<div class="toast success" th:if="${successMessage}" th:text="${successMessage}"></div>
+			<div class="toast error" th:if="${errorMessage}" th:text="${errorMessage}"></div>
+
+			<!-- Bulk upload error panel -->
+			<div th:if="${bulkErrors}" style="background:#fff5f5;border:1.5px solid #fca5a5;border-radius:12px;padding:18px 20px;margin-bottom:20px;">
+				<div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+					<div style="width:34px;height:34px;border-radius:50%;background:#fee2e2;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+						<i data-lucide="alert-circle" style="width:18px;height:18px;color:#dc2626;"></i>
+					</div>
+					<div>
+						<p style="margin:0;font-size:14px;font-weight:700;color:#991b1b;">Upload Rejected — No employees were saved</p>
+						<p style="margin:2px 0 0;font-size:12px;color:#b91c1c;">Fix all the errors below and re-upload the file.</p>
+					</div>
+				</div>
+				<ul style="margin:0;padding-left:18px;list-style:disc;">
+					<li th:each="err : ${bulkErrors}"
+						th:text="${err}"
+						style="font-size:13px;color:#7f1d1d;padding:3px 0;border-bottom:1px solid #fecaca;"></li>
+				</ul>
+			</div>
+
+			<div class="card au-form-card">
+				<div class="card-header">
+					<div>
+						<h2>Member Details</h2>
+						<p>All fields are required</p>
+					</div>
+				</div>
+				<form th:action="@{/hr/add-user}" method="post">
+					<div class="au-form-grid">
+						<!-- Email -->
+						<div class="form-group">
+							<label>Email Address</label>
+							<div class="input-wrap">
+								<input type="email" name="email" placeholder="user@example.com" required>
+							</div>
+						</div>
+						<!-- Username -->
+						<div class="form-group">
+							<label>Username</label>
+							<div class="input-wrap">
+								<input type="text" name="username" placeholder="Enter username" required>
+							</div>
+						</div>
+						<!-- Password -->
+						<div class="form-group">
+							<label>Password</label>
+							<div class="input-wrap">
+								<input type="password" name="password" id="passwordField" placeholder="Create password"
+									required>
+								<button type="button" class="eye-toggle"
+									onclick="togglePassword('passwordField','eyeIconPassword')" tabindex="-1">
+									<i data-lucide="eye" id="eyeIconPassword" style="width:18px;height:18px;"></i>
+								</button>
+							</div>
+						</div>
+						<!-- Confirm Password -->
+						<div class="form-group">
+							<label>Confirm Password</label>
+							<div class="input-wrap">
+								<input type="password" name="confirmPassword" id="confirmPasswordField"
+									placeholder="Confirm password" required>
+								<button type="button" class="eye-toggle"
+									onclick="togglePassword('confirmPasswordField','eyeIconConfirm')" tabindex="-1">
+									<i data-lucide="eye" id="eyeIconConfirm" style="width:18px;height:18px;"></i>
+								</button>
+							</div>
+						</div>
+						<!-- Role -->
+						<div class="form-group">
+							<label>Role</label>
+							<div class="input-wrap select-wrap">
+								<select name="role" class="select-input" required>
+									<option value="">Select Role</option>
+									<option value="HR">HR</option>
+									<option value="MANAGER">Manager</option>
+									<option value="EMPLOYEE">Employee</option>
+								</select>
+								<span class="select-arrow">
+									<i data-lucide="chevron-down" style="width:16px;height:16px;"></i>
+								</span>
+							</div>
+						</div>
+						<!-- Domain -->
+						<div class="form-group">
+							<label>Domain</label>
+							<div class="input-wrap select-wrap">
+								<select name="domain" class="select-input" required>
+									<option value="">Select Domain</option>
+									<option th:each="cat : ${domainCategories}" th:value="${cat.name}" th:text="${cat.name}"></option>
+									<th:block th:if="${#lists.isEmpty(domainCategories)}">
+										<option value="Engineering">Engineering</option>
+										<option value="Sales">Sales</option>
+										<option value="Marketing">Marketing</option>
+										<option value="HR">HR</option>
+										<option value="Finance">Finance</option>
+										<option value="Operations">Operations</option>
+									</th:block>
+								</select>
+								<span class="select-arrow">
+									<i data-lucide="chevron-down" style="width:16px;height:16px;"></i>
+								</span>
+							</div>
+						</div>
+						<!-- Joining Date -->
+						<div class="form-group">
+							<label>Joining Date</label>
+							<div class="input-wrap">
+								<input type="date" name="joiningDate" required style="width: 100%; height: 50px; border: 1.5px solid #e5edf2; border-radius: 14px; padding: 0 16px; font-size: 14px; outline: none; background: white; color: #163647; box-sizing: border-box; font-family: inherit;">
+							</div>
+						</div>
+					</div>
+					<div class="form-actions">
+						<a th:href="@{/hr/employees}" class="btn btn-clear">Cancel</a>
+						<button type="submit" class="btn btn-primary">
+							<i data-lucide="user-plus"></i> Add Member
+						</button>
+					</div>
+				</form>
+			</div>
+
+		</div>
+	</div>
+
+	<!-- ── Bulk Upload Modal ── -->
+	<div id="bulkUploadModal"
+		style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center;">
+		<div style="background:#fff;border-radius:16px;width:100%;max-width:480px;padding:32px;box-shadow:0 8px 40px rgba(0,0,0,.18);position:relative;margin:16px;">
+
+			<!-- Close -->
+			<button onclick="document.getElementById('bulkUploadModal').style.display='none'"
+				style="position:absolute;top:14px;right:16px;background:none;border:none;font-size:22px;cursor:pointer;color:#6b7280;line-height:1;">&#x2715;</button>
+
+			<!-- Header -->
+			<div style="display:flex;align-items:center;gap:14px;margin-bottom:20px;">
+				<div style="width:46px;height:46px;border-radius:12px;background:#e6f2fa;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+					<i data-lucide="file-spreadsheet" style="width:22px;height:22px;color:#17455e;"></i>
+				</div>
+				<div>
+					<h2 style="margin:0 0 3px;font-size:17px;font-weight:700;color:#163647;">Bulk Upload Employees</h2>
+					<p style="margin:0;font-size:12px;color:#6b7280;">Import multiple members from an Excel file</p>
+				</div>
+			</div>
+
+			<!-- Format guide -->
+			<div style="background:#f5f9fb;border:1px solid #dde8ef;border-radius:10px;padding:12px 14px;margin-bottom:18px;font-size:12.5px;color:#374151;line-height:1.8;">
+				<strong style="color:#163647;">Required columns</strong> (row 1 = header, skipped)<br>
+				<code style="background:#e0edf5;padding:2px 7px;border-radius:4px;font-size:11.5px;color:#17455e;">A: username &nbsp; B: email &nbsp; C: password &nbsp; D: role</code><br><br>
+				<strong style="color:#163647;">Roles:</strong>
+				<code style="background:#e0edf5;padding:2px 7px;border-radius:4px;font-size:11.5px;color:#17455e;">EMPLOYEE</code>
+				<code style="background:#e0edf5;padding:2px 7px;border-radius:4px;font-size:11.5px;color:#17455e;">MANAGER</code>
+				<code style="background:#e0edf5;padding:2px 7px;border-radius:4px;font-size:11.5px;color:#17455e;">HR</code><br>
+				<strong style="color:#163647;">Email:</strong>
+				<code style="background:#e0edf5;padding:2px 7px;border-radius:4px;font-size:11.5px;color:#17455e;">name.&lt;tenant&gt;@crm.com</code>
+			</div>
+
+			<!-- Upload form -->
+			<form th:action="@{/hr/bulk-upload}" method="post" enctype="multipart/form-data">
+				<div style="position:relative;border:2px dashed #c3d8e8;border-radius:10px;padding:24px 16px;text-align:center;cursor:pointer;transition:border-color .2s;background:#fafcfe;"
+					id="bulkDropZone">
+					<input type="file" name="file" id="bulkFileInput" accept=".xlsx,.xls" required
+						style="position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%;"
+						onchange="updateBulkFileLabel(this)">
+					<div style="pointer-events:none;">
+						<i data-lucide="upload-cloud" style="width:34px;height:34px;color:#17455e;margin-bottom:6px;"></i>
+						<p style="margin:0;font-size:13px;color:#6b7280;">Drop file here or <span style="color:#17455e;font-weight:600;">browse</span></p>
+						<p id="bulkFileName" style="margin:5px 0 0;font-size:12px;color:#17455e;font-weight:600;display:none;"></p>
+					</div>
+				</div>
+				<div style="display:flex;gap:10px;margin-top:18px;">
+					<button type="button" onclick="document.getElementById('bulkUploadModal').style.display='none'"
+						style="flex:1;height:44px;border:1.5px solid #c3d8e8;background:#f0f7fb;color:#17455e;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;font-family:'Poppins',sans-serif;">
+						Cancel
+					</button>
+					<button type="submit"
+						style="flex:2;height:44px;background:#17455e;color:#fff;border:none;border-radius:9px;font-size:14px;font-weight:600;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px;font-family:'Poppins',sans-serif;">
+						<i data-lucide="upload" style="width:15px;height:15px;"></i> Upload &amp; Import
+					</button>
+				</div>
+			</form>
+		</div>
+	</div>
+
+	<script>
+		// Sidebar
+		var hamburger = document.getElementById('hamburgerBtn');
+		var sidebar = document.getElementById('sidebar');
+		var overlay = document.getElementById('sidebarOverlay');
+		function openSidebar() {sidebar.classList.add('open'); overlay.classList.add('active'); document.body.style.overflow = 'hidden';}
+		function closeSidebar() {sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow = '';}
+		if (hamburger) hamburger.addEventListener('click', openSidebar);
+		if (overlay) overlay.addEventListener('click', closeSidebar);
+
+		// Close bulk modal on backdrop click
+		document.getElementById('bulkUploadModal').addEventListener('click', function(e) {
+			if (e.target === this) this.style.display = 'none';
+		});
+
+		// Password toggle
+		function togglePassword(fieldId, iconId) {
+			var f = document.getElementById(fieldId);
+			var i = document.getElementById(iconId);
+			if (!f) return;
+			f.type = f.type === 'password' ? 'text' : 'password';
+			if (i) i.setAttribute('data-lucide', f.type === 'password' ? 'eye' : 'eye-off');
+			lucide.createIcons();
+		}
+
+		// Bulk file label
+		function updateBulkFileLabel(input) {
+			var label = document.getElementById('bulkFileName');
+			if (input.files && input.files.length > 0) {
+				label.textContent = input.files[0].name;
+				label.style.display = 'block';
+				document.getElementById('bulkDropZone').style.borderColor = '#17455e';
+			}
+		}
+
+		// Auto-dismiss toasts
+		document.querySelectorAll('.toast').forEach(function (t) {
+			requestAnimationFrame(function () {
+				t.classList.add('toast-show');
+			});
+			setTimeout(function () {
+				t.classList.remove('toast-show');
+				t.classList.add('toast-hide');
+				t.addEventListener('transitionend', function () {
+					t.remove();
+				}, {once: true});
+			}, 3500);
+		});
+
+		lucide.createIcons();
+	</script>
+	<script th:src="@{/auth.js}"></script>
+	<script th:src="@{/notifications.js}"></script>
+</body>
+
+</html>

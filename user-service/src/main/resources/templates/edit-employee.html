@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit Employee — CRM</title>
+    <link rel="stylesheet" th:href="@{/admin.css}">
+	<link rel="stylesheet" th:href="@{/notifications.css}">
+    <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
+    <style>
+        .select-wrap {
+            position: relative;
+        }
+        .select-wrap .select-input {
+            appearance: none;
+            -webkit-appearance: none;
+            padding-right: 40px;
+            width: 100%;
+        }
+        .select-wrap .select-arrow {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: #9ca3af;
+            display: flex;
+            align-items: center;
+        }
+@media (max-width: 768px) {
+    .topbar { flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 16px; }
+    .topbar > div { flex-wrap: wrap; gap: 8px; }
+    .back-btn { height: 38px; padding: 0 14px; font-size: 12px; }
+    .topbar-right { width: 100%; justify-content: flex-end; }
+    .au-form-grid { grid-template-columns: 1fr 1fr; gap: 14px; }
+    .form-actions { flex-wrap: wrap; gap: 8px; }
+    .form-actions .btn { flex: 1; min-width: 120px; justify-content: center; }
+}
+@media (max-width: 480px) {
+    .au-form-grid { grid-template-columns: 1fr !important; gap: 12px; }
+    .form-actions { flex-direction: column; gap: 8px; }
+    .form-actions .btn { width: 100%; justify-content: center; }
+}
+    </style>
+</head>
+<body>
+
+<!-- MOBILE TOPBAR -->
+<div class="mobile-topbar">
+    <button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button>
+    <span class="mobile-title">CRM Admin</span>
+</div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+<!-- SIDEBAR -->
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-logo">
+        <div class="logo-icon"><i data-lucide="layout-dashboard"></i></div>
+        <h2>Admin</h2>
+    </div>
+    <div class="profile-box">
+        <div class="profile-avatar" th:text="${#strings.substring(adminName ?: 'Admin', 0, 1).toUpperCase()}">A</div>
+        <h3 th:text="${adminName} ?: 'Admin'">Admin</h3>
+        <p th:text="${adminRole} ?: 'Admin'">Admin</p>
+    </div>
+    <ul class="sidebar-menu">
+        <li>
+            <a th:href="@{/admin/dashboard}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+        </li>
+        <li class="active">
+            <a th:href="@{/admin/employees}"><i data-lucide="users"></i> Employees</a>
+        </li>
+
+        <li>
+            <a th:href="@{/admin/tasks}"><i data-lucide="check-square"></i> Tasks</a>
+        </li>
+        <li>
+            <a th:href="@{/admin/reports}"><i data-lucide="file-bar-chart"></i> Reports</a>
+        </li>
+        <li>
+            <a th:href="@{/admin/schedule-meeting}"><i data-lucide="calendar-clock"></i> Meetings</a>
+        </li>
+        <li>
+            <a th:href="@{/admin/profile}"><i data-lucide="user"></i> Profile</a>
+        </li>
+    </ul>
+    <a href="#" data-logout style="text-decoration:none;">
+        <button class="logout-btn"><i data-lucide="log-out"></i> Logout</button>
+    </a>
+</div>
+
+<!-- MAIN WRAPPER -->
+<div class="main-wrapper">
+
+    <!-- TOPBAR -->
+    <div class="topbar">
+        <div>
+            <h1>Edit Employee</h1>
+            <p class="topbar-subtitle" th:text="'Editing: ' + ${employee.username}">Editing employee</p>
+            <div class="breadcrumb">
+                <a th:href="@{/admin/dashboard}"><i data-lucide="home"></i> Home</a>
+                <span>&#8250;</span>
+                <a th:href="@{/admin/employees}">Employees</a>
+                <span>&#8250;</span>
+                <span th:text="${employee.username}">Employee</span>
+            </div>
+        </div>
+        <div class="topbar-right">
+            <div class="user-badge" th:text="${#strings.substring(adminName ?: 'Admin', 0, 1).toUpperCase()}">A</div>
+        </div>
+    </div>
+
+    <!-- PAGE CONTENT -->
+    <div class="page-content">
+
+        <!-- Flash messages -->
+        <div class="toast success" th:if="${successMessage}" th:text="${successMessage}"></div>
+        <div class="toast error"   th:if="${errorMessage}"   th:text="${errorMessage}"></div>
+
+        <!-- EDIT FORM CARD -->
+        <div class="card" style="max-width:760px;">
+            <div class="card-header">
+                <div>
+                    <h2>Update Employee</h2>
+                    <p th:text="'Modify the details for ' + ${employee.username}">Modify employee details</p>
+                </div>
+                <a th:href="@{/admin/employees}" class="btn-icon-close" title="Cancel"><i data-lucide="x"></i></a>
+            </div>
+            <div class="card-body">
+                <form th:action="@{/admin/edit-employee/{id}(id=${employee.id})}" method="post">
+                    <div class="au-form-grid">
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <div class="input-wrap">
+                                <input type="email" name="email" th:value="${employee.email}" readonly style="background-color: #e5edf2; cursor: not-allowed;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <div class="input-wrap">
+                                <input type="text" name="username" th:value="${employee.username}" readonly style="background-color: #e5edf2; cursor: not-allowed;">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Role</label>
+                            <div class="input-wrap select-wrap">
+                                <select name="role" class="select-input" required>
+                                    <option value="">Select Role</option>
+                                    <option value="HR" th:selected="${employee.role == 'HR'}">HR</option>
+                                    <option value="MANAGER" th:selected="${employee.role == 'MANAGER'}">Manager</option>
+                                    <option value="EMPLOYEE" th:selected="${employee.role == 'EMPLOYEE'}">Employee</option>
+                                </select>
+                                <span class="select-arrow">
+                                    <i data-lucide="chevron-down" style="width:16px;height:16px;"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Domain</label>
+                            <div class="input-wrap select-wrap">
+                                <select name="domain" class="select-input" required>
+                                    <option value="">Select Domain</option>
+                                    <option th:each="cat : ${domainCategories}" th:value="${cat.name}" th:text="${cat.name}" th:selected="${employee.domain == cat.name}"></option>
+                                    <th:block th:if="${#lists.isEmpty(domainCategories)}">
+                                        <option value="Engineering" th:selected="${employee.domain == 'Engineering'}">Engineering</option>
+                                        <option value="Sales" th:selected="${employee.domain == 'Sales'}">Sales</option>
+                                        <option value="Marketing" th:selected="${employee.domain == 'Marketing'}">Marketing</option>
+                                        <option value="HR" th:selected="${employee.domain == 'HR'}">HR</option>
+                                        <option value="Finance" th:selected="${employee.domain == 'Finance'}">Finance</option>
+                                        <option value="Operations" th:selected="${employee.domain == 'Operations'}">Operations</option>
+                                    </th:block>
+                                </select>
+                                <span class="select-arrow">
+                                    <i data-lucide="chevron-down" style="width:16px;height:16px;"></i>
+                                </span>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Joining Date</label>
+                            <div class="input-wrap">
+                                <input type="date" name="joiningDate" th:value="${employee.joiningDate}" required>
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>New Password (leave blank to keep current)</label>
+                            <div class="input-wrap">
+                                <input type="password" name="password" placeholder="Leave blank to keep current">
+                            </div>
+                        </div>
+                        <div class="form-group">
+                            <label>Confirm Password</label>
+                            <div class="input-wrap">
+                                <input type="password" name="confirmPassword" placeholder="Confirm new password">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-actions">
+                        <a th:href="@{/admin/employees}" class="btn btn-clear" style="display:inline-flex;align-items:center;">Cancel</a>
+                        <button type="submit" class="btn btn-primary"><i data-lucide="check"></i> Save Changes</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+    </div><!-- /page-content -->
+</div><!-- /main-wrapper -->
+
+<script>
+    // Sidebar
+    var hamburger = document.getElementById('hamburgerBtn');
+    var sidebar   = document.getElementById('sidebar');
+    var overlay   = document.getElementById('sidebarOverlay');
+    function openSidebar()  { sidebar.classList.add('open');    overlay.classList.add('active');    document.body.style.overflow='hidden'; }
+    function closeSidebar() { sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow=''; }
+    hamburger.addEventListener('click', openSidebar);
+    overlay.addEventListener('click', closeSidebar);
+    sidebar.querySelectorAll('a').forEach(function(l) {
+        l.addEventListener('click', function() { if (window.innerWidth < 900) closeSidebar(); });
+    });
+
+    // Toast — animate in, then out, then remove from DOM
+    document.querySelectorAll('.toast').forEach(function(t) {
+        requestAnimationFrame(function() { t.classList.add('toast-show'); });
+        setTimeout(function() {
+            t.classList.remove('toast-show');
+            t.classList.add('toast-hide');
+            t.addEventListener('transitionend', function() { t.remove(); }, { once: true });
+        }, 3500);
+    });
+
+    lucide.createIcons();
+</script>
+<script th:src="@{/auth.js}"></script>
+	<script th:src="@{/notifications.js}"></script>
+</body>
+</html>

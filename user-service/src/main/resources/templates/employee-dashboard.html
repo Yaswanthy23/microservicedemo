@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Employee — Dashboard</title>
+    <link rel="stylesheet" th:href="@{/employee.css}">
+    <link rel="stylesheet" th:href="@{/dashboard-analytics.css}">
+	<link rel="stylesheet" th:href="@{/notifications.css}">
+    <script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
+    <style>
+		/* Dashboard Task List Styles */
+		.dashboard-task-list {
+			display: flex;
+			flex-direction: column;
+			gap: 12px;
+			padding: 18px 20px;
+		}
+
+		.dashboard-task-item {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			padding: 12px 16px;
+			background: #f8fafc;
+			border: 1px solid #e2e8f0;
+			border-radius: 12px;
+			gap: 16px;
+			transition: transform 0.15s, box-shadow 0.15s;
+		}
+
+		.dashboard-task-item:hover {
+			transform: translateY(-1px);
+			box-shadow: 0 4px 12px rgba(22, 54, 71, 0.05);
+			background: #fff;
+		}
+
+		.task-info {
+			flex: 1;
+			min-width: 0;
+		}
+
+		.task-title {
+			font-size: 14px;
+			font-weight: 600;
+			color: #0f172a;
+			margin: 0 0 4px;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
+		}
+
+		.task-meta {
+			display: flex;
+			align-items: center;
+			gap: 12px;
+			font-size: 12px;
+			color: #64748b;
+		}
+
+		.task-actions-wrap {
+			display: flex;
+			align-items: center;
+			gap: 8px;
+			flex-shrink: 0;
+		}
+
+		/* Badges */
+		.pri-badge {
+			display: inline-flex;
+			align-items: center;
+			padding: 3px 10px;
+			border-radius: 20px;
+			font-size: 11px;
+			font-weight: 700;
+		}
+
+		.pri-badge.high {
+			background: #fee2e2;
+			color: #b91c1c;
+		}
+
+		.pri-badge.medium {
+			background: #fef3c7;
+			color: #b45309;
+		}
+
+		.pri-badge.low {
+			background: #dcfce7;
+			color: #15803d;
+		}
+
+		.stat-badge {
+			display: inline-flex;
+			align-items: center;
+			padding: 3px 10px;
+			border-radius: 20px;
+			font-size: 11px;
+			font-weight: 600;
+			text-transform: capitalize;
+		}
+
+		.stat-badge.inprog {
+			background: #fce9d8;
+			color: #b45309;
+		}
+
+		.stat-badge.pending {
+			background: #f1f5f9;
+			color: #64748b;
+		}
+
+		/* Responsive styling for dashboard tasks list */
+		@media (max-width: 576px) {
+			.dashboard-task-item {
+				flex-direction: column;
+				align-items: flex-start;
+				gap: 10px;
+				padding: 12px;
+			}
+			.task-actions-wrap {
+				width: 100%;
+				justify-content: flex-start;
+				border-top: 1px solid #f1f5f9;
+				padding-top: 8px;
+			}
+		}
+    </style>
+</head>
+<body>
+<div class="mobile-topbar"><button class="hamburger" id="hamburgerBtn"><span></span><span></span><span></span></button><span class="mobile-title">Employee</span><div class="mobile-topbar-right" id="mobileTopbarRight"></div></div>
+<div class="sidebar-overlay" id="sidebarOverlay"></div>
+<div class="sidebar" id="sidebar">
+    <a th:href="@{/employee/dashboard}" style="text-decoration: none; color: inherit; display: block;">
+        <div class="sidebar-logo"><div class="logo-icon"><i data-lucide="user"></i></div><h2>Employee</h2></div>
+    </a>
+    <div class="profile-box">
+        <div class="profile-avatar" th:text="${#strings.substring(employeeName ?: 'E', 0, 1).toUpperCase()}">E</div>
+        <h3 th:text="${employeeName} ?: 'Employee'">Employee</h3>
+        <p th:text="${employeeRole} ?: 'Employee'">Employee</p>
+    </div>
+    <ul class="sidebar-menu">
+        <li class="active"><a th:href="@{/employee/dashboard}"><i data-lucide="layout-dashboard"></i> Dashboard</a></li>
+        <li><a th:href="@{/employee/tasks}"><i data-lucide="check-square"></i> My Tasks</a></li>
+        <li><a th:href="@{/employee/attendance}"><i data-lucide="calendar-check"></i> Attendance</a></li>
+        <li><a th:href="@{/employee/leaves}"><i data-lucide="file-text"></i> Leave Request</a></li>
+        <li><a th:href="@{/employee/meetings}"><i data-lucide="calendar-clock"></i> Meetings</a></li>
+        <li><a th:href="@{/employee/calendar}"><i data-lucide="calendar"></i> Calendar</a></li>
+        <li><a th:href="@{/employee/reports}"><i data-lucide="file-bar-chart"></i> Reports</a></li>
+        <li><a th:href="@{/employee/payroll}"><i data-lucide="banknote"></i> Payslip</a></li>
+			<li><a th:href="@{/employee/profile}"><i data-lucide="user"></i> Profile</a></li>
+    </ul>
+    <a href="#" data-logout style="text-decoration:none;"><button class="logout-btn"><i data-lucide="log-out"></i> Logout</button></a>
+</div>
+<div class="main-wrapper">
+    <div class="topbar">
+        <h1>My Dashboard</h1>
+        <div class="topbar-right">
+            <div class="search-box"><input type="text" placeholder="Search tasks…"></div>
+            <div class="user-badge" th:text="${#strings.substring(employeeName ?: 'E', 0, 1).toUpperCase()}">E</div>
+        </div>
+    </div>
+    <div class="page-content">
+        <div class="stats-row">
+            <div class="stat-card"><div class="stat-icon green"><i data-lucide="check-circle-2"></i></div><div class="stat-info"><h3 data-analytics-stat="completedTasks" th:text="${completedTasks} ?: '0'">0</h3><p>Tasks Completed</p></div></div>
+            <div class="stat-card"><div class="stat-icon orange"><i data-lucide="calendar"></i></div><div class="stat-info"><h3 th:text="${attendanceRate} ?: '0%'">0%</h3><p>Attendance</p></div></div>
+            <div class="stat-card"><div class="stat-icon purple"><i data-lucide="clock"></i></div><div class="stat-info"><h3 th:text="${pendingLeaves} ?: '0'">0</h3><p>Pending Leaves</p></div></div>
+        </div>
+        <p class="section-label"><i data-lucide="bar-chart-2"></i> Analytics &amp; Insights</p>
+        <div class="analytics-grid">
+            <div class="card">
+                <div class="card-header"><div><h2>Task Status</h2><p>Breakdown of your assigned tasks</p></div><span class="chart-badge chip-blue">Doughnut</span></div>
+                <div class="card-body"><div class="chart-box"><canvas id="taskStatusChart"></canvas></div><div class="insight-row"><span class="insight-chip chip-green" id="chip-done">0 Done</span><span class="insight-chip chip-blue" id="chip-inprog">0 In Progress</span><span class="insight-chip chip-orange" id="chip-pending">0 Pending</span><span class="insight-chip chip-purple" id="chip-review">0 Review</span></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div><h2>Task Priority</h2><p>Your work by priority level</p></div><span class="chart-badge chip-orange">Pie Chart</span></div>
+                <div class="card-body"><div class="chart-box"><canvas id="taskPriorityChart"></canvas></div><div class="insight-row"><span class="insight-chip chip-red" id="chip-high">0 High</span><span class="insight-chip chip-orange" id="chip-medium">0 Medium</span><span class="insight-chip chip-green" id="chip-low">0 Low</span></div></div>
+            </div>
+            <div class="card card-full">
+                <div class="card-header"><div><h2>Tasks by Manager</h2><p>Your assigned work grouped by creator</p></div><span class="chart-badge chip-teal">Bar Chart</span></div>
+                <div class="card-body"><div class="chart-box-tall"><canvas id="memberTaskChart"></canvas></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div><h2>Team Status</h2><p>Active vs inactive teammates</p></div><span class="chart-badge chip-green">Pie Chart</span></div>
+                <div class="card-body"><div class="chart-box"><canvas id="teamStatusChart"></canvas></div><div class="insight-row"><span class="insight-chip chip-green" id="chip-active-team">0 Active</span><span class="insight-chip chip-red" id="chip-inactive-team">0 Inactive</span></div></div>
+            </div>
+            <div class="card">
+                <div class="card-header"><div><h2>Verification Status</h2><p>Review and approval breakdown</p></div><span class="chart-badge chip-purple">Doughnut</span></div>
+                <div class="card-body"><div class="chart-box"><canvas id="verificationChart"></canvas></div><div class="insight-row"><span class="insight-chip chip-green" id="chip-approved">0 Approved</span><span class="insight-chip chip-red" id="chip-rejected">0 Rejected</span><span class="insight-chip chip-orange" id="chip-waiting">0 Waiting</span><span class="insight-chip chip-blue" id="chip-unverified">0 Open</span></div></div>
+            </div>
+        </div>
+        <p class="section-label" style="margin-top:28px;"><i data-lucide="layout-list"></i> Overview</p>
+        <div class="dashboard-grid">
+            <div class="left-col">
+                <div class="card">
+                    <div class="card-header"><div><h2>My Tasks</h2><p>Pending tasks</p></div><a th:href="@{/employee/tasks}" class="btn-link">All Tasks &rarr;</a></div>
+                    <div th:if="${pendingTasks == null or #lists.isEmpty(pendingTasks)}" class="empty-state" style="padding:20px;"><i data-lucide="check-square" style="width:32px;height:32px;opacity:.3;"></i><h3>No Pending Tasks</h3></div>
+                    
+                    <!-- Task list if not empty -->
+                    <div th:unless="${pendingTasks == null or #lists.isEmpty(pendingTasks)}" class="dashboard-task-list">
+                        <div th:each="task : ${pendingTasks}" class="dashboard-task-item">
+                            <div class="task-info">
+                                <h4 class="task-title" th:text="${task.title}">Task Title</h4>
+                                <div class="task-meta">
+                                    <span class="task-due">
+                                        <i data-lucide="calendar" style="width:12px;height:12px;vertical-align:middle;margin-right:3px;"></i>
+                                        <span th:text="${task.dueDate} ?: 'No due date'">Due Date</span>
+                                    </span>
+                                    <span class="task-by" th:if="${task.createdBy != null}">
+                                        <i data-lucide="user" style="width:12px;height:12px;vertical-align:middle;margin-right:3px;"></i>
+                                        <span th:text="${task.createdBy}">Manager</span>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="task-actions-wrap">
+                                <span class="pri-badge" 
+                                      th:classappend="${task.priority == 'High'} ? 'high' : (${task.priority == 'Low'} ? 'low' : 'medium')"
+                                      th:text="${task.priority}">Medium</span>
+                                <span class="stat-badge pending" 
+                                      th:classappend="${task.status == 'in-progress'} ? 'inprog' : 'pending'"
+                                      th:text="${task.status}">Pending</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="right-col">
+                <div class="card">
+                    <div class="card-header"><div><h2>Attendance</h2><p th:text="${attendanceMonth} ?: 'This Month'">This Month</p></div></div>
+                    <div class="attendance-row">
+                        <div class="att-item"><strong th:text="${presentDays} ?: '0'">0</strong><span>Present</span></div>
+                        <div class="att-item"><strong th:text="${absentDays} ?: '0'">0</strong><span>Absent</span></div>
+                        <div class="att-item"><strong th:text="${leaveDays} ?: '0'">0</strong><span>Leave</span></div>
+                    </div>
+                    <div class="progress-bar"><div class="progress-fill" th:style="'width:' + ${attendancePercent} + '%'"></div></div>
+                    <div class="checkin-info">Last check-in: <strong th:text="${lastCheckin} ?: '—'">—</strong></div>
+                </div>
+                <!-- My Team card -->
+                <div class="card">
+                    <div class="card-header"><div><h2>My Team</h2><p>Your assigned team</p></div></div>
+                    <div th:if="${myTeamName == null}" style="text-align:center;padding:20px;color:#9ab3bd;font-size:13px;">
+                        <i data-lucide="users" style="width:32px;height:32px;opacity:.3;display:block;margin:0 auto 8px;"></i>
+                        Not assigned to any team yet.
+                    </div>
+                    <div th:unless="${myTeamName == null}" style="padding:4px 0;">
+                        <!-- Team name row -->
+                        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #edf3f6;">
+                            <div style="width:36px;height:36px;border-radius:12px;background:#dcecf5;color:#17455e;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i data-lucide="users-round" style="width:18px;height:18px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:#9ab3bd;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Team</div>
+                                <div style="font-size:14px;font-weight:700;color:#163647;" th:text="${myTeamName}">Team</div>
+                            </div>
+                            <div style="margin-left:auto;background:#dcecf5;color:#17455e;border-radius:20px;padding:3px 12px;font-size:12px;font-weight:600;" th:text="${myTeamSize} + ' member(s)'">0</div>
+                        </div>
+                        <!-- Manager row -->
+                        <div style="display:flex;align-items:center;gap:12px;padding:10px 0;border-bottom:1px solid #edf3f6;">
+                            <div style="width:36px;height:36px;border-radius:12px;background:#dff5ea;color:#1b7a46;display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                                <i data-lucide="user-check" style="width:18px;height:18px;"></i>
+                            </div>
+                            <div>
+                                <div style="font-size:11px;color:#9ab3bd;font-weight:600;text-transform:uppercase;letter-spacing:.04em;">Manager</div>
+                                <div style="font-size:13px;font-weight:700;color:#163647;" th:text="${myTeamManager}">—</div>
+                            </div>
+                        </div>
+                        <!-- Team members list -->
+                        <div style="margin-top:10px;">
+                            <div style="font-size:11px;color:#9ab3bd;font-weight:600;text-transform:uppercase;letter-spacing:.04em;margin-bottom:8px;">Teammates</div>
+                            <div th:if="${myTeamMembers == null or #lists.isEmpty(myTeamMembers)}"
+                                 style="font-size:13px;color:#9ab3bd;text-align:center;padding:8px 0;">No teammates yet.</div>
+                            <div th:unless="${myTeamMembers == null or #lists.isEmpty(myTeamMembers)}" style="max-height:180px;overflow-y:auto;padding-right:4px;">
+                                <div th:each="member : ${myTeamMembers}"
+                                     style="display:flex;align-items:center;gap:10px;padding:6px 0;border-bottom:1px solid #f3f7fa;">
+                                    <div style="width:30px;height:30px;border-radius:50%;background:#e9e2ff;color:#5b21b6;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;"
+                                         th:text="${#strings.substring(member.username ?: 'E', 0, 1).toUpperCase()}">E</div>
+                                    <div style="flex:1;min-width:0;">
+                                        <div style="font-size:13px;font-weight:600;color:#163647;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" th:text="${member.username}">Name</div>
+                                        <div style="font-size:11px;color:#9ab3bd;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;" th:text="${member.email}">email</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="card">
+                    <div class="card-header"><div><h2>Quick Actions</h2></div></div>
+                    <div class="quick-actions">
+                        <a th:href="@{/employee/tasks}" class="quick-action-btn"><span class="qa-icon" style="background:#dff5ea;color:#1b7a46;"><i data-lucide="check-square"></i></span><span>My Tasks</span></a>
+                        <a th:href="@{/employee/attendance}" class="quick-action-btn"><span class="qa-icon" style="background:#fce9d8;color:#b45309;"><i data-lucide="calendar"></i></span><span>Attendance</span></a>
+                        <a th:href="@{/employee/leaves}" class="quick-action-btn"><span class="qa-icon" style="background:#e9e2ff;color:#5b21b6;"><i data-lucide="file-text"></i></span><span>Leave</span></a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var hamburger=document.getElementById('hamburgerBtn'),sidebar=document.getElementById('sidebar'),overlay=document.getElementById('sidebarOverlay');
+    function openSidebar(){sidebar.classList.add('open');overlay.classList.add('active');document.body.style.overflow='hidden';}
+    function closeSidebar(){sidebar.classList.remove('open');overlay.classList.remove('active');document.body.style.overflow='';}
+    if(hamburger)hamburger.addEventListener('click',openSidebar);
+    if(overlay)overlay.addEventListener('click',closeSidebar);
+    lucide.createIcons();
+</script>
+<script th:inline="javascript">
+/*<![CDATA[*/
+window.dashboardAnalytics = {
+    endpoint: /*[[@{/employee/dashboard/analytics}]]*/ '/employee/dashboard/analytics',
+    memberDatasetLabel: 'Tasks Assigned',
+    statBindings: { completedTasks: 'completedTasks' },
+    initialData: {
+        statusDone: /*[[${chartStatusDone}]]*/ 0,
+        statusInProgress: /*[[${chartStatusInProgress}]]*/ 0,
+        statusPending: /*[[${chartStatusPending}]]*/ 0,
+        statusReview: /*[[${chartStatusReview}]]*/ 0,
+        priorityHigh: /*[[${chartPriorityHigh}]]*/ 0,
+        priorityMedium: /*[[${chartPriorityMedium}]]*/ 0,
+        priorityLow: /*[[${chartPriorityLow}]]*/ 0,
+        memberLabels: /*[[${chartMemberLabels}]]*/ [],
+        memberTaskCounts: /*[[${chartMemberTaskCounts}]]*/ [],
+        activeTeam: /*[[${chartActiveTeam}]]*/ 0,
+        inactiveTeam: /*[[${chartInactiveTeam}]]*/ 0,
+        verified: /*[[${chartVerified}]]*/ 0,
+        rejected: /*[[${chartRejected}]]*/ 0,
+        waiting: /*[[${chartWaiting}]]*/ 0,
+        unverified: /*[[${chartUnverified}]]*/ 0
+    }
+};
+/*]]>*/
+</script>
+<script th:src="@{/dashboard-analytics.js}"></script>
+<script th:src="@{/auth.js}"></script>
+<script th:src="@{/notifications.js}"></script>
+</body>
+</html>

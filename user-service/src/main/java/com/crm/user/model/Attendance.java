@@ -1,0 +1,195 @@
+package com.crm.user.model;
+
+import java.time.LocalDate;
+import java.time.LocalTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+
+@Entity
+@Table(name = "attendance")
+public class Attendance {
+
+    private static final String TIME_FORMAT = "%02d:%02d";
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
+
+    @Column(nullable = false)
+    private LocalDate date;
+
+    private LocalTime checkIn;
+    private LocalTime checkOut;
+
+    // Break 1
+    private LocalTime breakStart;
+    private LocalTime breakEnd;
+
+    // Break 2
+    private LocalTime break2Start;
+    private LocalTime break2End;
+
+    @Column(nullable = false, columnDefinition = "VARCHAR(20) DEFAULT 'present'")
+    private String status = "present";
+
+    @Column(nullable = false)
+    private String tenantSegment;
+
+    // ── Getters & Setters ──────────────────────────────────────────────────
+
+    public Long getId()                        { return id; }
+    public void setId(Long id)                 { this.id = id; }
+
+    public User getUser()                      { return user; }
+    public void setUser(User user)             { this.user = user; }
+
+    public LocalDate getDate()                 { return date; }
+    public void setDate(LocalDate date)        { this.date = date; }
+
+    public LocalTime getCheckIn()              { return checkIn; }
+    public void setCheckIn(LocalTime checkIn)  { this.checkIn = checkIn; }
+
+    public LocalTime getCheckOut()             { return checkOut; }
+    public void setCheckOut(LocalTime t)       { this.checkOut = t; }
+
+    public LocalTime getBreakStart()           { return breakStart; }
+    public void setBreakStart(LocalTime t)     { this.breakStart = t; }
+
+    public LocalTime getBreakEnd()             { return breakEnd; }
+    public void setBreakEnd(LocalTime t)       { this.breakEnd = t; }
+
+    public LocalTime getBreak2Start()          { return break2Start; }
+    public void setBreak2Start(LocalTime t)    { this.break2Start = t; }
+
+    public LocalTime getBreak2End()            { return break2End; }
+    public void setBreak2End(LocalTime t)      { this.break2End = t; }
+
+    public String getStatus()                  { return status != null ? status : "present"; }
+    public void setStatus(String status)       { this.status = status; }
+
+    public String getTenantSegment()           { return tenantSegment; }
+    public void setTenantSegment(String t)     { this.tenantSegment = t; }
+
+    // ── Derived helpers ────────────────────────────────────────────────────
+
+    public String getCheckInDisplay() {
+        return checkIn != null ? String.format(TIME_FORMAT, checkIn.getHour(), checkIn.getMinute()) : "—";
+    }
+
+    public String getCheckOutDisplay() {
+        return checkOut != null ? String.format(TIME_FORMAT, checkOut.getHour(), checkOut.getMinute()) : "—";
+    }
+
+    public String getBreakStartDisplay() {
+        return breakStart != null ? String.format(TIME_FORMAT, breakStart.getHour(), breakStart.getMinute()) : "—";
+    }
+
+    public String getBreakEndDisplay() {
+        return breakEnd != null ? String.format(TIME_FORMAT, breakEnd.getHour(), breakEnd.getMinute()) : "—";
+    }
+
+    public String getBreak2StartDisplay() {
+        return break2Start != null ? String.format(TIME_FORMAT, break2Start.getHour(), break2Start.getMinute()) : "—";
+    }
+
+    public String getBreak2EndDisplay() {
+        return break2End != null ? String.format(TIME_FORMAT, break2End.getHour(), break2End.getMinute()) : "—";
+    }
+
+    /** Total break minutes across both breaks, including any active break in progress. */
+    public long getTotalBreakMinutes() {
+        long mins = 0;
+        java.time.LocalTime now = java.time.LocalTime.now();
+
+        if (breakStart != null) {
+            java.time.LocalTime endTime = breakEnd != null ? breakEnd : now;
+            long d = java.time.Duration.between(breakStart, endTime).toMinutes();
+            if (d > 0) mins += d;
+        }
+
+        if (break2Start != null) {
+            java.time.LocalTime endTime = break2End != null ? break2End : now;
+            long d = java.time.Duration.between(break2Start, endTime).toMinutes();
+            if (d > 0) mins += d;
+        }
+
+        return mins;
+    }
+
+    /** Combined break duration like "45m" or "—" */
+    public String getBreakDuration() {
+        long mins = getTotalBreakMinutes();
+        return mins > 0 ? mins + "m" : "—";
+    }
+
+    public String getBreak1Summary() {
+        if (breakStart != null || breakEnd != null) {
+            String start = breakStart != null ? String.format(TIME_FORMAT, breakStart.getHour(), breakStart.getMinute()) : "—";
+            String end   = breakEnd != null ? String.format(TIME_FORMAT, breakEnd.getHour(), breakEnd.getMinute()) : "—";
+            return "Break 1: " + start + " - " + end;
+        }
+        return "—";
+    }
+
+    public String getBreak2Summary() {
+        if (break2Start != null || break2End != null) {
+            String start = break2Start != null ? String.format(TIME_FORMAT, break2Start.getHour(), break2Start.getMinute()) : "—";
+            String end   = break2End != null ? String.format(TIME_FORMAT, break2End.getHour(), break2End.getMinute()) : "—";
+            return "Break 2: " + start + " - " + end;
+        }
+        return "—";
+    }
+
+    /** Human-readable break timeline rendered as two visible lines. */
+    public String getBreakSummary() {
+        String first = getBreak1Summary();
+        String second = getBreak2Summary();
+
+        if ("—".equals(first) && "—".equals(second)) {
+            return "—";
+        }
+
+        return ("—".equals(first) ? "" : first)
+                + ("—".equals(first) || "—".equals(second) ? "" : "<br/>")
+                + ("—".equals(second) ? "" : second);
+    }
+
+    /** Worked minutes excluding all breaks (returns -1 if not punched out) */
+    public long getWorkedMinutes() {
+        if (checkIn == null || checkOut == null) return -1;
+        long total = java.time.Duration.between(checkIn, checkOut).toMinutes();
+        if (total < 0) {
+            total += 1440; // support midnight wrap
+        }
+        total -= getTotalBreakMinutes();
+        return Math.max(total, 0);
+    }
+
+    /** Worked hours excluding all breaks */
+    public String getWorkedHours() {
+        long mins = getWorkedMinutes();
+        if (mins < 0) return "—";
+        return (mins / 60) + "h " + (mins % 60) + "m";
+    }
+
+    /** Half Day / Full Day/ Absent label based on worked time */
+    public String getDayType() {
+        long mins = getWorkedMinutes();
+        if (mins < 0) return "—";
+        if (mins < 240) return "Absent";
+        if (mins < 360) return "Half Day";
+        return "Full Day";
+    }
+}

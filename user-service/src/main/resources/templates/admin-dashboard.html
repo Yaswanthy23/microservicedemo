@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.thymeleaf.org">
+
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Admin — Dashboard</title>
+	<link rel="stylesheet" th:href="@{/admin.css}">
+	<link rel="stylesheet" th:href="@{/dashboard-analytics.css}">
+	<link rel="stylesheet" th:href="@{/notifications.css}">
+	<script src="https://unpkg.com/lucide@1.24.0/dist/umd/lucide.min.js" integrity="sha384-mooE85Luwgx+AyykX7e90VcN8/QCFTSIwPuHLmvcsLVoA0en7lKYb9XlOzn5G2co" crossorigin="anonymous"></script>
+	<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js" integrity="sha384-JUh163oCRItcbPme8pYnROHQMC6fNKTBWtRG3I3I0erJkzNgL7uxKlNwcrcFKeqF" crossorigin="anonymous"></script>
+	<style>
+		/* ── Dashboard responsive topbar fix ── */
+		@media (max-width: 768px) {
+			.topbar { flex-direction: column; align-items: flex-start; gap: 10px; margin-top: 16px; margin-bottom: 16px; }
+			.topbar h1 { font-size: 20px; }
+			.topbar-right { width: 100%; display: flex; align-items: center; gap: 10px; }
+			.topbar-right .search-box { flex: 1; height: 40px; min-width: 0; }
+			.topbar-right .user-badge { width: 40px; height: 40px; font-size: 14px; flex-shrink: 0; }
+		}
+		@media (max-width: 480px) {
+			.topbar h1 { font-size: 18px; }
+			.topbar-right .search-box { height: 38px; }
+		}
+	</style>
+</head>
+
+<body>
+	<div class="mobile-topbar"><button class="hamburger"
+			id="hamburgerBtn"><span></span><span></span><span></span></button><span class="mobile-title">CRM Admin</span><div class="mobile-topbar-right" id="mobileTopbarRight"></div></div>
+	<div class="sidebar-overlay" id="sidebarOverlay"></div>
+	<div class="sidebar" id="sidebar">
+		<a th:href="@{/admin/dashboard}" style="text-decoration: none; color: inherit; display: block;">
+			<div class="sidebar-logo">
+				<div class="logo-icon"><i data-lucide="shield"></i></div>
+				<h2>Admin</h2>
+			</div>
+		</a>
+		<div class="profile-box">
+			<div class="profile-avatar" th:text="${#strings.substring(adminName ?: 'Admin', 0, 1).toUpperCase()}">A
+			</div>
+			<h3 th:text="${adminName} ?: 'Admin'">Admin</h3>
+			<p th:text="${adminRole} ?: 'ADMIN'">ADMIN</p>
+		</div>
+		<ul class="sidebar-menu">
+			<li class="active"><a th:href="@{/admin/dashboard}"><i data-lucide="layout-dashboard"></i> Dashboard</a>
+			</li>
+			<li><a th:href="@{/admin/employees}"><i data-lucide="users"></i> Employees</a></li>
+			<li><a th:href="@{/admin/tasks}"><i data-lucide="check-square"></i> Tasks</a></li>
+			<li><a th:href="@{/admin/reports}"><i data-lucide="file-bar-chart"></i> Reports</a></li>
+			<li><a th:href="@{/admin/schedule-meeting}"><i data-lucide="calendar-clock"></i> Meetings</a></li>
+			<li><a th:href="@{/admin/calendar}"><i data-lucide="calendar"></i> Calendar</a></li>
+			<li><a th:href="@{/admin/profile}"><i data-lucide="user"></i> Profile</a></li>
+			<li><a th:href="@{/admin/settings}"><i data-lucide="settings"></i> Settings</a></li>
+		</ul>
+		<a href="#" data-logout style="text-decoration:none;"><button class="logout-btn"><i data-lucide="log-out"></i>
+				Logout</button></a>
+	</div>
+	<div class="main-wrapper">
+		<div class="topbar">
+			<h1>Dashboard</h1>
+			<div class="topbar-right">
+				<div class="search-box"><input type="text" id="globalSearch" placeholder="Search…"></div>
+				<div class="user-badge" th:text="${#strings.substring(adminName ?: 'Admin', 0, 1).toUpperCase()}">A
+				</div>
+			</div>
+		</div>
+		<div class="page-content">
+			<div class="stats-row">
+				<div class="stat-card">
+					<div class="stat-icon green"><i data-lucide="users"></i></div>
+					<div class="stat-info">
+						<h3 data-analytics-stat="totalEmployees" th:text="${totalEmployees} ?: '0'">0</h3>
+						<p>Total Employees</p><span class="stat-growth" th:text="${employeeGrowth} ?: '+0%'">+0%</span>
+					</div>
+				</div>
+
+				<div class="stat-card">
+					<div class="stat-icon orange"><i data-lucide="check-square"></i></div>
+					<div class="stat-info">
+						<h3 data-analytics-stat="tasksDone" th:text="${tasksDone} ?: '0'">0</h3>
+						<p>Tasks Done</p><span class="stat-growth" th:text="${taskGrowth} ?: '+0%'">+0%</span>
+					</div>
+				</div>
+				<div class="stat-card">
+					<div class="stat-icon purple"><i data-lucide="alert-triangle"></i></div>
+					<div class="stat-info">
+						<h3 data-analytics-stat="pendingTasks" th:text="${overdueTasks} ?: '0'">0</h3>
+						<p>Overdue Tasks</p><span class="stat-growth warn" th:text="${overdueChange} ?: '0%'">0%</span>
+					</div>
+				</div>
+			</div>
+			<p class="section-label"><i data-lucide="bar-chart-2"></i> Analytics &amp; Insights</p>
+			<div class="analytics-grid">
+				<div class="card">
+					<div class="card-header"><div><h2>Task Status</h2><p>Tenant-wide task breakdown</p></div><span class="chart-badge chip-blue">Doughnut</span></div>
+					<div class="card-body"><div class="chart-box"><canvas id="taskStatusChart"></canvas></div><div class="insight-row"><span class="insight-chip chip-green" id="chip-done">0 Done</span><span class="insight-chip chip-blue" id="chip-inprog">0 In Progress</span><span class="insight-chip chip-orange" id="chip-pending">0 Pending</span><span class="insight-chip chip-purple" id="chip-review">0 Review</span></div></div>
+				</div>
+				<div class="card">
+					<div class="card-header"><div><h2>Task Priority</h2><p>Distribution across priority levels</p></div><span class="chart-badge chip-orange">Pie Chart</span></div>
+					<div class="card-body"><div class="chart-box"><canvas id="taskPriorityChart"></canvas></div><div class="insight-row"><span class="insight-chip chip-red" id="chip-high">0 High</span><span class="insight-chip chip-orange" id="chip-medium">0 Medium</span><span class="insight-chip chip-green" id="chip-low">0 Low</span></div></div>
+				</div>
+				<div class="card card-full">
+					<div class="card-header"><div><h2>Tasks per Employee</h2><p>Assigned workload across employees</p></div><span class="chart-badge chip-teal">Bar Chart</span></div>
+					<div class="card-body"><div class="chart-box-tall"><canvas id="memberTaskChart"></canvas></div></div>
+				</div>
+				<div class="card">
+					<div class="card-header"><div><h2>Employee Status</h2><p>Active vs inactive employees</p></div><span class="chart-badge chip-green">Pie Chart</span></div>
+					<div class="card-body"><div class="chart-box"><canvas id="teamStatusChart"></canvas></div><div class="insight-row"><span class="insight-chip chip-green" id="chip-active-team">0 Active</span><span class="insight-chip chip-red" id="chip-inactive-team">0 Inactive</span></div></div>
+				</div>
+				<div class="card">
+					<div class="card-header"><div><h2>Verification Status</h2><p>Task review and approval breakdown</p></div><span class="chart-badge chip-purple">Doughnut</span></div>
+					<div class="card-body"><div class="chart-box"><canvas id="verificationChart"></canvas></div><div class="insight-row"><span class="insight-chip chip-green" id="chip-approved">0 Approved</span><span class="insight-chip chip-red" id="chip-rejected">0 Rejected</span><span class="insight-chip chip-orange" id="chip-waiting">0 Waiting</span><span class="insight-chip chip-blue" id="chip-unverified">0 Open</span></div></div>
+				</div>
+			</div>
+			<p class="section-label" style="margin-top:28px;"><i data-lucide="layout-list"></i> Overview</p>
+			<div class="dashboard-grid">
+				<div class="card">
+					<div class="card-header">
+						<div>
+							<h2>Recent Activity</h2>
+							<p>Latest actions across the system</p>
+						</div>
+					</div>
+					<div class="empty-state"><i data-lucide="clipboard" style="width:40px;height:40px;opacity:.3;"></i>
+						<h3>No recent activity</h3>
+						<p>Activity will appear here once users start working.</p>
+					</div>
+				</div>
+				<div class="right-col">
+
+					<div class="card">
+						<div class="card-header">
+							<div>
+								<h2>Quick Actions</h2>
+							</div>
+						</div>
+						<div class="quick-actions">
+							<a th:href="@{/admin/employees}" class="quick-action-btn">
+								<div class="qa-icon" style="background:#dff5ea;color:#1b7a46;"><i
+										data-lucide="users"></i></div> Employees
+							</a>
+
+							<a th:href="@{/admin/tasks}" class="quick-action-btn">
+								<div class="qa-icon" style="background:#fce9d8;color:#b45309;"><i
+										data-lucide="check-square"></i></div> Tasks
+							</a>
+							<a th:href="@{/admin/reports}" class="quick-action-btn">
+								<div class="qa-icon" style="background:#e9e2ff;color:#5b21b6;"><i
+										data-lucide="file-bar-chart"></i></div> View Reports
+							</a>
+						</div>
+					</div>
+
+				</div>
+			</div>
+		</div>
+	</div>
+	<script>
+		var hamburger = document.getElementById('hamburgerBtn'), sidebar = document.getElementById('sidebar'), overlay = document.getElementById('sidebarOverlay');
+		function openSidebar() {sidebar.classList.add('open'); overlay.classList.add('active'); document.body.style.overflow = 'hidden';}
+		function closeSidebar() {sidebar.classList.remove('open'); overlay.classList.remove('active'); document.body.style.overflow = '';}
+		if (hamburger) hamburger.addEventListener('click', openSidebar);
+		if (overlay) overlay.addEventListener('click', closeSidebar);
+		lucide.createIcons();
+	</script>
+	<script th:inline="javascript">
+	/*<![CDATA[*/
+	window.dashboardAnalytics = {
+		endpoint: /*[[@{/admin/dashboard/analytics}]]*/ '/admin/dashboard/analytics',
+		memberDatasetLabel: 'Tasks Assigned',
+		statBindings: {
+			totalEmployees: 'totalEmployees',
+			tasksDone: 'tasksDone',
+			pendingTasks: 'pendingTaskTotal'
+		},
+		initialData: {
+			statusDone: /*[[${chartStatusDone}]]*/ 0,
+			statusInProgress: /*[[${chartStatusInProgress}]]*/ 0,
+			statusPending: /*[[${chartStatusPending}]]*/ 0,
+			statusReview: /*[[${chartStatusReview}]]*/ 0,
+			priorityHigh: /*[[${chartPriorityHigh}]]*/ 0,
+			priorityMedium: /*[[${chartPriorityMedium}]]*/ 0,
+			priorityLow: /*[[${chartPriorityLow}]]*/ 0,
+			memberLabels: /*[[${chartMemberLabels}]]*/ [],
+			memberTaskCounts: /*[[${chartMemberTaskCounts}]]*/ [],
+			activeTeam: /*[[${chartActiveTeam}]]*/ 0,
+			inactiveTeam: /*[[${chartInactiveTeam}]]*/ 0,
+			verified: /*[[${chartVerified}]]*/ 0,
+			rejected: /*[[${chartRejected}]]*/ 0,
+			waiting: /*[[${chartWaiting}]]*/ 0,
+			unverified: /*[[${chartUnverified}]]*/ 0
+		}
+	};
+	/*]]>*/
+	</script>
+	<script th:src="@{/dashboard-analytics.js}"></script>
+	<script th:src="@{/auth.js}"></script>
+	<script th:src="@{/notifications.js}"></script>
+</body>
+
+</html>
