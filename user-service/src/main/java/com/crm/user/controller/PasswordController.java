@@ -17,8 +17,13 @@ import com.crm.user.model.PasswordResetToken;
 import com.crm.user.repository.PasswordResetTokenRepository;
 import com.crm.user.repository.UserRepository;
 
+import org.springframework.beans.factory.annotation.Value;
+
 @Controller
 public class PasswordController {
+
+    @Value("${app.reset-password-base-url:http://localhost:8080}")
+    private String resetPasswordBaseUrl;
 
 	private static final String PAGE_FORGOT_PASSWORD = "forgot-password";
 	private static final String PAGE_RESET_PASSWORD = "reset-password";
@@ -84,7 +89,7 @@ public class PasswordController {
 		tokenRepository.save(resetToken);
 
 		// Reset link
-		var resetLink = "http://localhost:8080/reset-password?token=" + token;
+		var resetLink = resetPasswordBaseUrl + "/reset-password?token=" + token;
 
 		// Send email
 		var message = new SimpleMailMessage();

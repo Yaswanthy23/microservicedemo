@@ -64,7 +64,8 @@ public class SecurityConfig {
                                 "/images/**",
                                 "/static/**",
                                 "/ws",
-                                "/ws/**")
+                                "/ws/**",
+                                "/actuator/**")
                         .permitAll()
                         // GET /api/holidays — any authenticated user (all roles see their tenant's
                         // holidays)

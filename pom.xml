@@ -43,6 +43,7 @@
         <module>file-service</module>
         <module>report-service</module>
         <module>audit-service</module>
+        <module>gateway-service</module>
     </modules>
 
     <dependencyManagement>

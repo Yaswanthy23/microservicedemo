@@ -1,56 +1,72 @@
 server:
-  port: 8080
+  port: ${PORT:8080}
+  shutdown: graceful
 
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   application:
     name: gateway-service
   cloud:
+    compatibility-verifier:
+      enabled: false
     gateway:
       discovery:
         locator:
-          enabled: true
+          enabled: false
           lower-case-service-id: true
       routes:
         - id: auth-service
-          uri: lb://auth-service
+          uri: ${AUTH_SERVICE_URL:http://auth-service:8081}
           predicates:
-            - Path=/api/auth/**, /login, /logout, /forgot-password, /reset-password
+            - Path=/api/auth/**, /login, /logout, /forgot-password, /reset-password, /login.css, /forget-password.css, /reset-password.css, /favicon.svg, /favicon.ico
 
         - id: admin-service
-          uri: lb://admin-service
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
           predicates:
             - Path=/admin/**, /superadmin/**, /api/admin/**
 
         - id: employee-service
-          uri: lb://employee-service
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
           predicates:
             - Path=/employee/**, /api/employee/**, /api/tasks/**
 
         - id: manager-service
-          uri: lb://manager-service
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
           predicates:
             - Path=/manager/**, /api/manager/**
 
         - id: hr-service
-          uri: lb://hr-service
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
           predicates:
             - Path=/hr/**, /api/hr/**, /api/payroll/**
 
         - id: holiday-service
-          uri: lb://holiday-service
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
           predicates:
             - Path=/holidays, /api/holidays/**
 
         - id: notification-service
-          uri: lb://notification-service
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
           predicates:
             - Path=/api/notifications/**, /ws/**
 
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
+        - id: static-resources
+          uri: ${USER_SERVICE_URL:http://user-service:8082}
+          predicates:
+            - Path=/*.css, /*.js, /*.png, /*.jpg, /*.ico, /*.svg, /css/**, /js/**, /images/**
 
 app:
   jwt:
-    secret: Y3JtU2VjcmV0S2V5Rm9yVGVuYW50Q3JtQXBwbGljYXRpb24yMDI2
+    secret: ${JWT_SECRET:Y3JtU2VjcmV0S2V5Rm9yVGVuYW50Q3JtQXBwbGljYXRpb24yMDI2}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
