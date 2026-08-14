@@ -1,7 +1,10 @@
 server:
-  port: ${PORT:8089}
+  port: ${PORT:8093}
+  shutdown: graceful
 
 spring:
+  lifecycle:
+    timeout-per-shutdown-phase: 30s
   application:
     name: audit-service
   datasource:
@@ -12,7 +15,7 @@ spring:
   jpa:
     database-platform: org.hibernate.dialect.MySQLDialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: ${SPRING_JPA_HIBERNATE_DDL_AUTO:update}
     show-sql: false
 
 management:

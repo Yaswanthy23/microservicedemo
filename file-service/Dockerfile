@@ -20,11 +20,12 @@ COPY report-service/pom.xml report-service/
 COPY audit-service/pom.xml audit-service/
 COPY gateway-service/pom.xml gateway-service/
 
-# Copy sources for gateway-service
-COPY gateway-service/src gateway-service/src
+# Copy sources for common-library and file-service
+COPY common-library/src common-library/src
+COPY file-service/src file-service/src
 
-# Build gateway-service
-RUN mvn clean package -pl gateway-service -am -DskipTests
+# Build only file-service and its dependencies
+RUN mvn clean package -pl file-service -am -DskipTests
 
 # Runtime stage
 FROM eclipse-temurin:17-jre-alpine
@@ -35,7 +36,7 @@ RUN addgroup -S crm && adduser -S crm -G crm
 USER crm
 
 # Copy jar from builder stage
-COPY --from=builder /app/gateway-service/target/gateway-service-*.jar app.jar
+COPY --from=builder /app/file-service/target/file-service-*.jar app.jar
 
-EXPOSE 8080
+EXPOSE 8091
 ENTRYPOINT ["java", "-jar", "app.jar"]

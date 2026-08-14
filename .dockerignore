@@ -1,0 +1,13 @@
+**/.git
+**/.gitignore
+**/.idea
+**/.vscode
+**/*.iml
+**/target/
+**/logs/
+**/*.log
+.system_generated/
+scratch/
+implementation_plan.md
+walkthrough.md
+*.md
