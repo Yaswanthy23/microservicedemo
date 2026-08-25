@@ -1,0 +1,116 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: gateway-service
+  namespace: gateway
+
+  labels:
+    app: gateway-service
+    component: backend
+
+spec:
+
+  replicas: 1
+
+  revisionHistoryLimit: 3
+
+  selector:
+    matchLabels:
+      app: gateway-service
+
+  template:
+
+    metadata:
+      labels:
+        app: gateway-service
+        component: backend
+
+    spec:
+
+      terminationGracePeriodSeconds: 30
+
+      containers:
+
+        - name: gateway-service
+
+          image: 058233700821.dkr.ecr.ap-south-1.amazonaws.com/gateway-service:qa-001
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+
+            - name: http
+              containerPort: 8080
+              protocol: TCP
+
+          env:
+
+            #########################################
+            # Application
+            #########################################
+
+            - name: PORT
+              value: "8080"
+
+            #########################################
+            # Auth Service
+            #########################################
+
+            - name: AUTH_SERVICE_URL
+              value: "http://auth-service.auth.svc.cluster.local:8081"
+
+            #########################################
+            # User Service
+            #########################################
+
+            - name: USER_SERVICE_URL
+              value: "http://user-service.user.svc.cluster.local:8082"
+
+          resources:
+
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+
+          readinessProbe:
+
+            httpGet:
+              path: /actuator/health
+              port: http
+              scheme: HTTP
+
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+
+          livenessProbe:
+
+            httpGet:
+              path: /actuator/health
+              port: http
+              scheme: HTTP
+
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          lifecycle:
+
+            preStop:
+
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - sleep 10
+
+          terminationMessagePolicy: File

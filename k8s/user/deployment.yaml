@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: user-service
+  namespace: user
+
+  labels:
+    app: user-service
+    component: backend
+
+spec:
+
+  replicas: 1
+
+  revisionHistoryLimit: 3
+
+  selector:
+    matchLabels:
+      app: user-service
+
+  template:
+
+    metadata:
+      labels:
+        app: user-service
+        component: backend
+
+    spec:
+
+      terminationGracePeriodSeconds: 30
+
+      containers:
+
+        - name: user-service
+
+          image: 058233700821.dkr.ecr.ap-south-1.amazonaws.com/user-service:qa-001
+
+          imagePullPolicy: IfNotPresent
+
+          ports:
+
+            - name: http
+              containerPort: 8082
+              protocol: TCP
+
+          env:
+
+            #########################################
+            # Application
+            #########################################
+
+            - name: PORT
+              value: "8082"
+
+            #########################################
+            # Database
+            #########################################
+
+            - name: DB_HOST
+              value: "crm-qa-speshway-qa-db.c9o0iwiqig5w.ap-south-1.rds.amazonaws.com"
+
+            - name: DB_PORT
+              value: "3306"
+
+            - name: DB_NAME
+              value: "speshway"
+
+            - name: DB_USER
+              valueFrom:
+                secretKeyRef:
+                  name: user-db-secret
+                  key: DB_USER
+
+            - name: DB_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: user-db-secret
+                  key: DB_PASSWORD
+
+          resources:
+
+            requests:
+              cpu: "250m"
+              memory: "512Mi"
+
+            limits:
+              cpu: "500m"
+              memory: "1Gi"
+
+          readinessProbe:
+
+            httpGet:
+              path: /actuator/health
+              port: http
+              scheme: HTTP
+
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 6
+
+          livenessProbe:
+
+            httpGet:
+              path: /actuator/health
+              port: http
+              scheme: HTTP
+
+            initialDelaySeconds: 60
+            periodSeconds: 20
+            timeoutSeconds: 5
+            successThreshold: 1
+            failureThreshold: 3
+
+          lifecycle:
+
+            preStop:
+
+              exec:
+                command:
+                  - /bin/sh
+                  - -c
+                  - sleep 10
+
+          terminationMessagePolicy: File
