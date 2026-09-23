@@ -24,14 +24,14 @@ pipeline {
         stage('Docker Build') {
             steps {
                 sh '''
-                   sudo  docker build -t auth-service:qa-${BUILD_NUMBER} ./auth-service
-                    sudo docker build -t gateway-service:qa-${BUILD_NUMBER} ./gateway-service
-                    sudo docker build -t user-service:qa-${BUILD_NUMBER} ./user-service
-                    sudo docker build -t admin-service:qa-${BUILD_NUMBER} ./admin-service
-                    sudo docker build -t employee-service:qa-${BUILD_NUMBER} ./employee-service
-                    sudo docker build -t customer-service:qa-${BUILD_NUMBER} ./customer-service
-                    sudo docker build -t hr-service:qa-${BUILD_NUMBER} ./hr-service
-                    sudo docker build -t task-service:qa-${BUILD_NUMBER} ./task-service
+                    docker build -t auth-service:qa-${BUILD_NUMBER} ./auth-service
+                    docker build -t gateway-service:qa-${BUILD_NUMBER} ./gateway-service
+                    docker build -t user-service:qa-${BUILD_NUMBER} ./user-service
+                    docker build -t admin-service:qa-${BUILD_NUMBER} ./admin-service
+                    docker build -t employee-service:qa-${BUILD_NUMBER} ./employee-service
+                    docker build -t customer-service:qa-${BUILD_NUMBER} ./customer-service
+                    docker build -t hr-service:qa-${BUILD_NUMBER} ./hr-service
+                    docker build -t task-service:qa-${BUILD_NUMBER} ./task-service
                 '''
             }
         }
