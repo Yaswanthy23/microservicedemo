@@ -22,34 +22,49 @@ pipeline {
         }
 
         stage('Docker Access Test') {
-    		steps {
-        sh '''
-            echo "===== USER ====="
-            whoami
+            steps {
+                sh '''
+                    echo "===== USER ====="
+                    whoami
 
-            echo "===== GROUPS ====="
-            id
+                    echo "===== GROUPS ====="
+                    id
 
-            echo "===== DOCKER SOCKET ====="
-            ls -l /var/run/docker.sock
+                    echo "===== DOCKER SOCKET ====="
+                    ls -l /var/run/docker.sock
 
-            echo "===== DOCKER TEST ====="
-            docker ps
-        '''
-    }
-}
+                    echo "===== DOCKER TEST ====="
+                    docker ps
+                '''
+            }
+        }
 
         stage('Docker Build') {
             steps {
                 sh '''
-                    docker build -t auth-service:qa-${BUILD_NUMBER} ./auth-service
-                    docker build -t gateway-service:qa-${BUILD_NUMBER} ./gateway-service
-                    docker build -t user-service:qa-${BUILD_NUMBER} ./user-service
-                    docker build -t admin-service:qa-${BUILD_NUMBER} ./admin-service
-                    docker build -t employee-service:qa-${BUILD_NUMBER} ./employee-service
-                    docker build -t customer-service:qa-${BUILD_NUMBER} ./customer-service
-                    docker build -t hr-service:qa-${BUILD_NUMBER} ./hr-service
-                    docker build -t task-service:qa-${BUILD_NUMBER} ./task-service
+                    docker build -t auth-service:qa-${BUILD_NUMBER} \
+                      -f ./auth-service/Dockerfile .
+
+                    docker build -t gateway-service:qa-${BUILD_NUMBER} \
+                      -f ./gateway-service/Dockerfile .
+
+                    docker build -t user-service:qa-${BUILD_NUMBER} \
+                      -f ./user-service/Dockerfile .
+
+                    docker build -t admin-service:qa-${BUILD_NUMBER} \
+                      -f ./admin-service/Dockerfile .
+
+                    docker build -t employee-service:qa-${BUILD_NUMBER} \
+                      -f ./employee-service/Dockerfile .
+
+                    docker build -t customer-service:qa-${BUILD_NUMBER} \
+                      -f ./customer-service/Dockerfile .
+
+                    docker build -t hr-service:qa-${BUILD_NUMBER} \
+                      -f ./hr-service/Dockerfile .
+
+                    docker build -t task-service:qa-${BUILD_NUMBER} \
+                      -f ./task-service/Dockerfile .
                 '''
             }
         }
@@ -57,7 +72,7 @@ pipeline {
         stage('Trivy Scan') {
             steps {
                 sh '''
-                   trivy image --exit-code 1 --severity HIGH,CRITICAL auth-service:qa-${BUILD_NUMBER}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL auth-service:qa-${BUILD_NUMBER}
                     trivy image --exit-code 1 --severity HIGH,CRITICAL gateway-service:qa-${BUILD_NUMBER}
                     trivy image --exit-code 1 --severity HIGH,CRITICAL user-service:qa-${BUILD_NUMBER}
                     trivy image --exit-code 1 --severity HIGH,CRITICAL admin-service:qa-${BUILD_NUMBER}
