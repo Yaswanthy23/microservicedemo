@@ -21,6 +21,24 @@ pipeline {
             }
         }
 
+        stage('Docker Access Test') {
+    		steps {
+        sh '''
+            echo "===== USER ====="
+            whoami
+
+            echo "===== GROUPS ====="
+            id
+
+            echo "===== DOCKER SOCKET ====="
+            ls -l /var/run/docker.sock
+
+            echo "===== DOCKER TEST ====="
+            docker ps
+        '''
+    }
+}
+
         stage('Docker Build') {
             steps {
                 sh '''
