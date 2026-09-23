@@ -2,6 +2,11 @@ pipeline {
 
     agent any
 
+    environment {
+        AWS_REGION = 'ap-south-1'
+        EKS_CLUSTER_NAME = 'crm-qa-eks'
+    }
+
     stages {
 
         stage('Checkout') {
@@ -65,6 +70,21 @@ pipeline {
 
                     docker build -t task-service:qa-${BUILD_NUMBER} \
                       -f ./task-service/Dockerfile .
+                '''
+            }
+        }
+
+        stage('Trivy Scan') {
+            steps {
+                sh '''
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL auth-service:qa-${BUILD_NUMBER}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL gateway-service:qa-${BUILD_NUMBER}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL user-service:qa-${BUILD_NUMBER}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL admin-service:qa-${BUILD_NUMBER}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL employee-service:qa-${BUILD_NUMBER}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL customer-service:qa-${BUILD_NUMBER}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL hr-service:qa-${BUILD_NUMBER}
+                    trivy image --exit-code 1 --severity HIGH,CRITICAL task-service:qa-${BUILD_NUMBER}
                 '''
             }
         }
