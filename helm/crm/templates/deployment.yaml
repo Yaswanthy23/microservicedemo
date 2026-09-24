@@ -6,24 +6,32 @@ metadata:
   namespace: {{ $service.namespace }}
   labels:
     app: {{ $service.name }}
+
 spec:
   replicas: {{ $service.replicas }}
   revisionHistoryLimit: 3
+
   selector:
     matchLabels:
       app: {{ $service.name }}
+
   template:
     metadata:
       labels:
         app: {{ $service.name }}
+
     spec:
       terminationGracePeriodSeconds: 30
+
       containers:
         - name: {{ $service.name }}
+
           image: "{{ $.Values.global.imageRegistry }}/{{ $service.image }}:{{ $service.tag }}"
+
           imagePullPolicy: {{ $.Values.global.imagePullPolicy }}
 
-          {{- if ne $service.name "gateway-service" }}
+{{- if ne $service.name "gateway-service" }}
+
           env:
             - name: DB_HOST
               value: {{ $.Values.database.host | quote }}
@@ -45,12 +53,20 @@ spec:
                 secretKeyRef:
                   name: crm-db-secret
                   key: DB_PASSWORD
+
+          volumeMounts:
+            - name: crm-db-secret
+              mountPath: /mnt/secrets-store
+              readOnly: true
+
 {{- end }}
 
 {{- if eq $service.name "gateway-service" }}
+
           envFrom:
             - configMapRef:
                 name: gateway-config
+
 {{- end }}
 
           ports:
@@ -85,5 +101,18 @@ spec:
             limits:
               cpu: 500m
               memory: 1Gi
+
+{{- if ne $service.name "gateway-service" }}
+
+      volumes:
+        - name: crm-db-secret
+          csi:
+            driver: secrets-store.csi.k8s.io
+            readOnly: true
+            volumeAttributes:
+              secretProviderClass: crm-db-secret
+
+{{- end }}
+
 ---
 {{- end }}
